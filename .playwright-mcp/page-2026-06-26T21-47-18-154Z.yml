@@ -1,0 +1,275 @@
+- generic [ref=e3]:
+  - banner [ref=e4]:
+    - generic [ref=e5]:
+      - img [ref=e7]
+      - generic [ref=e9]: AI Doc Workspace
+    - generic [ref=e10]:
+      - generic [ref=e11]:
+        - heading "Security Review – Q2" [level=1] [ref=e347]
+        - paragraph [ref=e13]: Saved Yesterday
+      - generic [ref=e14]: Approved
+    - generic [ref=e15]:
+      - generic [ref=e16]:
+        - generic [ref=e17]: K
+        - generic [ref=e18]: A
+        - generic [ref=e19]: M
+      - button "Share" [ref=e20]:
+        - img [ref=e21]
+        - text: Share
+      - button "Run AI Review" [ref=e24]:
+        - img [ref=e25]
+        - text: Run AI Review
+      - button [ref=e28]:
+        - img [ref=e29]
+  - generic [ref=e33]:
+    - complementary [ref=e34]:
+      - generic [ref=e36]:
+        - img [ref=e37]
+        - textbox "Search docs..." [ref=e40]
+      - generic [ref=e41]:
+        - generic [ref=e42]:
+          - generic [ref=e43]:
+            - generic [ref=e44]: Documents
+            - button "New document" [ref=e45]:
+              - img [ref=e46]
+          - list [ref=e48]:
+            - listitem [ref=e49]:
+              - button "AI Document Collaboration – Technical Design Doc reviewing 5 min ago" [ref=e348]:
+                - generic [ref=e51]:
+                  - img [ref=e52]
+                  - generic [ref=e56]:
+                    - paragraph [ref=e57]: AI Document Collaboration – Technical Design Doc
+                    - generic [ref=e58]:
+                      - generic [ref=e59]: reviewing
+                      - generic [ref=e60]: 5 min ago
+            - listitem [ref=e61]:
+              - button "Product Requirements – v2 draft 5 hours ago" [ref=e62]:
+                - generic [ref=e63]:
+                  - img [ref=e64]
+                  - generic [ref=e68]:
+                    - paragraph [ref=e69]: Product Requirements – v2
+                    - generic [ref=e70]:
+                      - generic [ref=e71]: draft
+                      - generic [ref=e72]: 5 hours ago
+            - listitem [ref=e73]:
+              - button "Security Review – Q2 approved Yesterday" [active] [ref=e74]:
+                - generic [ref=e75]:
+                  - img [ref=e76]
+                  - generic [ref=e80]:
+                    - paragraph [ref=e81]: Security Review – Q2
+                    - generic [ref=e82]:
+                      - generic [ref=e83]: approved
+                      - generic [ref=e84]: Yesterday
+            - listitem [ref=e85]:
+              - button "Project Plan – Phoenix reviewing 2 days ago" [ref=e86]:
+                - generic [ref=e87]:
+                  - img [ref=e88]
+                  - generic [ref=e92]:
+                    - paragraph [ref=e93]: Project Plan – Phoenix
+                    - generic [ref=e94]:
+                      - generic [ref=e95]: reviewing
+                      - generic [ref=e96]: 2 days ago
+            - listitem [ref=e97]:
+              - button "Launch Plan – v1.0 draft 3 days ago" [ref=e98]:
+                - generic [ref=e99]:
+                  - img [ref=e100]
+                  - generic [ref=e104]:
+                    - paragraph [ref=e105]: Launch Plan – v1.0
+                    - generic [ref=e106]:
+                      - generic [ref=e107]: draft
+                      - generic [ref=e108]: 3 days ago
+            - listitem [ref=e109]:
+              - button "Incident Review 2024-05 approved 5 days ago" [ref=e110]:
+                - generic [ref=e111]:
+                  - img [ref=e112]
+                  - generic [ref=e116]:
+                    - paragraph [ref=e117]: Incident Review 2024-05
+                    - generic [ref=e118]:
+                      - generic [ref=e119]: approved
+                      - generic [ref=e120]: 5 days ago
+        - generic [ref=e121]:
+          - button "Templates" [ref=e122]:
+            - generic [ref=e123]: Templates
+            - img [ref=e124]
+          - list [ref=e126]:
+            - listitem [ref=e127]:
+              - button "Product Spec" [ref=e128]:
+                - img [ref=e129]
+                - text: Product Spec
+            - listitem [ref=e132]:
+              - button "Technical Design Doc" [ref=e133]:
+                - img [ref=e134]
+                - text: Technical Design Doc
+            - listitem [ref=e137]:
+              - button "Security Review" [ref=e138]:
+                - img [ref=e139]
+                - text: Security Review
+            - listitem [ref=e142]:
+              - button "Project Plan" [ref=e143]:
+                - img [ref=e144]
+                - text: Project Plan
+            - listitem [ref=e147]:
+              - button "Incident Review" [ref=e148]:
+                - img [ref=e149]
+                - text: Incident Review
+      - generic [ref=e152]:
+        - generic [ref=e153]:
+          - generic [ref=e154]: K
+          - generic [ref=e155]: Khanh
+        - button [ref=e156]:
+          - img [ref=e157]
+    - main [ref=e160]:
+      - generic [ref=e161]:
+        - button "H1" [ref=e162]:
+          - generic [ref=e163]: H1
+        - button "H2" [ref=e164]:
+          - generic [ref=e165]: H2
+        - button "H3" [ref=e166]:
+          - generic [ref=e167]: H3
+        - button "B" [ref=e169]:
+          - generic [ref=e170]: B
+        - button "I" [ref=e171]:
+          - generic [ref=e172]: I
+        - button "U" [ref=e173]:
+          - generic [ref=e174]: U
+        - button "Bullet list" [ref=e176]:
+          - img [ref=e177]
+        - button "Numbered list" [ref=e182]:
+          - img [ref=e183]
+        - button "Link" [ref=e187]:
+          - img [ref=e188]
+        - button "Code" [ref=e191]:
+          - img [ref=e192]
+      - generic [ref=e195]:
+        - heading "Security Review – Q2" [level=1] [ref=e349]
+        - generic [ref=e197]:
+          - generic [ref=e351]:
+            - heading "1. Scope" [level=2] [ref=e352]
+            - textbox "Start writing…" [ref=e353]: This review covers the authentication, authorization, and data storage components of the platform.
+          - generic [ref=e355]:
+            - heading "2. Findings" [level=2] [ref=e356]
+            - textbox "Start writing…" [ref=e357]: No critical vulnerabilities found. Two medium-severity issues were addressed and closed.
+          - generic [ref=e359]:
+            - heading "3. Recommendations" [level=2] [ref=e360]
+            - textbox "Start writing…" [ref=e361]: Enable MFA for all admin accounts. Review session timeout policies quarterly.
+          - generic [ref=e363]:
+            - heading "4. Sign-off" [level=2] [ref=e364]
+            - textbox "Start writing…" [ref=e365]: Approved by Security Lead on 2024-06-15.
+      - generic [ref=e229]:
+        - generic [ref=e230]: 41 words
+        - generic [ref=e231]:
+          - img [ref=e232]
+          - text: Everyone can edit
+    - complementary [ref=e235]:
+      - generic [ref=e236]:
+        - heading "AI Assistant" [level=2] [ref=e237]
+        - generic [ref=e238]:
+          - paragraph [ref=e239]: Select an agent
+          - generic [ref=e240]:
+            - button "D Drafting Agent" [ref=e241]:
+              - generic [ref=e242]: D
+              - text: Drafting Agent
+            - button "R Reviewer Agent" [ref=e243]:
+              - generic [ref=e244]: R
+              - text: Reviewer Agent
+            - button "S Security Agent" [ref=e245]:
+              - generic [ref=e246]: S
+              - text: Security Agent
+            - button "C Clarity Agent" [ref=e247]:
+              - generic [ref=e248]: C
+              - text: Clarity Agent
+            - button "T Technical Risk Agent" [ref=e249]:
+              - generic [ref=e250]: T
+              - text: Technical Risk Agent
+        - generic [ref=e251]:
+          - paragraph [ref=e252]: Ask the Reviewer Agent
+          - generic [ref=e253]:
+            - textbox [ref=e254]: Review this document for clarity, completeness, and any missing sections.
+            - button [ref=e255]:
+              - img [ref=e256]
+      - generic [ref=e258]:
+        - button "Suggestions 4" [ref=e259]:
+          - text: Suggestions
+          - generic [ref=e260]: "4"
+        - button "Comments 0" [ref=e261]:
+          - text: Comments
+          - generic [ref=e262]: "0"
+      - generic [ref=e264]:
+        - generic [ref=e265]:
+          - generic [ref=e266]:
+            - generic [ref=e267]: Goals
+            - generic [ref=e268]: 3 min ago
+          - paragraph [ref=e269]: Add measurable success criteria.
+          - generic [ref=e270]:
+            - button "Accept" [ref=e271]:
+              - img [ref=e272]
+              - text: Accept
+            - button "Dismiss" [ref=e274]:
+              - img [ref=e275]
+              - text: Dismiss
+        - generic [ref=e277]:
+          - generic [ref=e278]:
+            - generic [ref=e279]: Risks & Mitigations
+            - generic [ref=e280]: 3 min ago
+          - paragraph [ref=e281]: Security section is too vague. Consider adding access controls and audit logs.
+          - generic [ref=e282]:
+            - button "Accept" [ref=e283]:
+              - img [ref=e284]
+              - text: Accept
+            - button "Dismiss" [ref=e286]:
+              - img [ref=e287]
+              - text: Dismiss
+        - generic [ref=e289]:
+          - generic [ref=e290]:
+            - generic [ref=e291]: Architecture
+            - generic [ref=e292]: 3 min ago
+          - paragraph [ref=e293]: Explain how data persistence is handled.
+          - generic [ref=e294]:
+            - button "Accept" [ref=e295]:
+              - img [ref=e296]
+              - text: Accept
+            - button "Dismiss" [ref=e298]:
+              - img [ref=e299]
+              - text: Dismiss
+        - generic [ref=e301]:
+          - generic [ref=e302]:
+            - generic [ref=e303]: Proposed Solution
+            - generic [ref=e304]: 3 min ago
+          - paragraph [ref=e305]: Add examples of the AI review workflow.
+          - generic [ref=e306]:
+            - button "Accept" [ref=e307]:
+              - img [ref=e308]
+              - text: Accept
+            - button "Dismiss" [ref=e310]:
+              - img [ref=e311]
+              - text: Dismiss
+  - generic [ref=e313]:
+    - generic [ref=e314]: Activity
+    - generic [ref=e315]:
+      - generic [ref=e316]:
+        - generic [ref=e317]:
+          - generic [ref=e318]: R
+          - generic [ref=e319]:
+            - generic [ref=e320]: AI Reviewer
+            - generic [ref=e321]: Added 4 suggestions · 3 min ago
+        - img [ref=e322]
+      - generic [ref=e324]:
+        - generic [ref=e325]:
+          - generic [ref=e326]: K
+          - generic [ref=e327]:
+            - generic [ref=e328]: Khanh
+            - generic [ref=e329]: Edited Goals section · 5 min ago
+        - img [ref=e330]
+      - generic [ref=e332]:
+        - generic [ref=e333]:
+          - generic [ref=e334]: D
+          - generic [ref=e335]:
+            - generic [ref=e336]: Drafting Agent
+            - generic [ref=e337]: Created initial draft · 10 min ago
+        - img [ref=e338]
+      - generic [ref=e341]:
+        - generic [ref=e342]: K
+        - generic [ref=e343]:
+          - generic [ref=e344]: Khanh
+          - generic [ref=e345]: Created document · 15 min ago
+    - button "View all" [ref=e346]

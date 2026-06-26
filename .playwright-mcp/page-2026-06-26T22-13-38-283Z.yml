@@ -1,0 +1,358 @@
+- generic [ref=e3]:
+  - banner [ref=e4]:
+    - generic [ref=e5]:
+      - img [ref=e7]
+      - generic [ref=e9]: AI Doc Workspace
+    - generic [ref=e10]:
+      - generic [ref=e11]:
+        - heading "AI Document Collaboration – Technical Design Doc" [level=1] [ref=e12]
+        - paragraph [ref=e13]: Saved 9 min ago
+      - generic [ref=e14]: Reviewing
+    - generic [ref=e15]:
+      - generic [ref=e16]:
+        - generic [ref=e17]: K
+        - generic [ref=e18]: A
+        - generic [ref=e19]: M
+      - button "Share" [ref=e20]:
+        - img [ref=e21]
+        - text: Share
+      - button "Run AI Review" [ref=e24]:
+        - img [ref=e25]
+        - text: Run AI Review
+      - button [ref=e28]:
+        - img [ref=e29]
+  - generic [ref=e33]:
+    - complementary [ref=e34]:
+      - generic [ref=e36]:
+        - img [ref=e37]
+        - textbox "Search docs..." [ref=e40]
+      - generic [ref=e41]:
+        - generic [ref=e42]:
+          - generic [ref=e43]:
+            - generic [ref=e44]: Documents
+            - button "New document" [ref=e45]:
+              - img [ref=e46]
+          - list [ref=e48]:
+            - listitem [ref=e49]:
+              - button "Untitled Document draft 8 min ago" [ref=e50]:
+                - generic [ref=e51]:
+                  - img [ref=e52]
+                  - generic [ref=e56]:
+                    - paragraph [ref=e57]: Untitled Document
+                    - generic [ref=e58]:
+                      - generic [ref=e59]: draft
+                      - generic [ref=e60]: 8 min ago
+            - listitem [ref=e61]:
+              - button "AI Document Collaboration – Technical Design Doc reviewing 9 min ago" [ref=e62]:
+                - generic [ref=e63]:
+                  - img [ref=e64]
+                  - generic [ref=e68]:
+                    - paragraph [ref=e69]: AI Document Collaboration – Technical Design Doc
+                    - generic [ref=e70]:
+                      - generic [ref=e71]: reviewing
+                      - generic [ref=e72]: 9 min ago
+            - listitem [ref=e73]:
+              - button "Product Requirements – v2 draft 5 hours ago" [ref=e74]:
+                - generic [ref=e75]:
+                  - img [ref=e76]
+                  - generic [ref=e80]:
+                    - paragraph [ref=e81]: Product Requirements – v2
+                    - generic [ref=e82]:
+                      - generic [ref=e83]: draft
+                      - generic [ref=e84]: 5 hours ago
+            - listitem [ref=e85]:
+              - button "Security Review – Q2 approved Yesterday" [ref=e86]:
+                - generic [ref=e87]:
+                  - img [ref=e88]
+                  - generic [ref=e92]:
+                    - paragraph [ref=e93]: Security Review – Q2
+                    - generic [ref=e94]:
+                      - generic [ref=e95]: approved
+                      - generic [ref=e96]: Yesterday
+            - listitem [ref=e97]:
+              - button "Project Plan – Phoenix reviewing 2 days ago" [ref=e98]:
+                - generic [ref=e99]:
+                  - img [ref=e100]
+                  - generic [ref=e104]:
+                    - paragraph [ref=e105]: Project Plan – Phoenix
+                    - generic [ref=e106]:
+                      - generic [ref=e107]: reviewing
+                      - generic [ref=e108]: 2 days ago
+            - listitem [ref=e109]:
+              - button "Launch Plan – v1.0 draft 3 days ago" [ref=e110]:
+                - generic [ref=e111]:
+                  - img [ref=e112]
+                  - generic [ref=e116]:
+                    - paragraph [ref=e117]: Launch Plan – v1.0
+                    - generic [ref=e118]:
+                      - generic [ref=e119]: draft
+                      - generic [ref=e120]: 3 days ago
+            - listitem [ref=e121]:
+              - button "Incident Review 2024-05 approved 5 days ago" [ref=e122]:
+                - generic [ref=e123]:
+                  - img [ref=e124]
+                  - generic [ref=e128]:
+                    - paragraph [ref=e129]: Incident Review 2024-05
+                    - generic [ref=e130]:
+                      - generic [ref=e131]: approved
+                      - generic [ref=e132]: 5 days ago
+        - generic [ref=e133]:
+          - button "Templates" [ref=e134]:
+            - generic [ref=e135]: Templates
+            - img [ref=e136]
+          - list [ref=e138]:
+            - listitem [ref=e139]:
+              - button "Product Spec" [ref=e140]:
+                - img [ref=e141]
+                - text: Product Spec
+            - listitem [ref=e144]:
+              - button "Technical Design Doc" [ref=e145]:
+                - img [ref=e146]
+                - text: Technical Design Doc
+            - listitem [ref=e149]:
+              - button "Security Review" [ref=e150]:
+                - img [ref=e151]
+                - text: Security Review
+            - listitem [ref=e154]:
+              - button "Project Plan" [ref=e155]:
+                - img [ref=e156]
+                - text: Project Plan
+            - listitem [ref=e159]:
+              - button "Incident Review" [ref=e160]:
+                - img [ref=e161]
+                - text: Incident Review
+      - generic [ref=e164]:
+        - generic [ref=e165]:
+          - generic [ref=e166]: K
+          - generic [ref=e167]: Khanh
+        - button [ref=e168]:
+          - img [ref=e169]
+    - main [ref=e172]:
+      - generic [ref=e173]:
+        - button "H1" [ref=e174]:
+          - generic [ref=e175]: H1
+        - button "H2" [ref=e176]:
+          - generic [ref=e177]: H2
+        - button "H3" [ref=e178]:
+          - generic [ref=e179]: H3
+        - button "B" [ref=e181]:
+          - generic [ref=e182]: B
+        - button "I" [ref=e183]:
+          - generic [ref=e184]: I
+        - button "U" [ref=e185]:
+          - generic [ref=e186]: U
+        - button "Bullet list" [ref=e188]:
+          - img [ref=e189]
+        - button "Numbered list" [ref=e194]:
+          - img [ref=e195]
+        - button "Link" [ref=e199]:
+          - img [ref=e200]
+        - button "Code" [ref=e203]:
+          - img [ref=e204]
+      - generic [ref=e207]:
+        - heading "AI Document Collaboration – Technical Design Doc" [level=1] [ref=e208]
+        - generic [ref=e209]:
+          - generic [ref=e210]:
+            - generic [ref=e211]:
+              - heading "1. Problem" [level=2] [ref=e212]
+              - textbox "Start writing…" [ref=e213]: Teams create documents using AI in one tool and then paste them into another for collaboration and review. This creates friction, context switching, and version drift.
+            - button "R Reviewer Agent 9 min ago Consider adding concrete examples or references to strengthen this section's credibility." [ref=e216]:
+              - generic [ref=e217]:
+                - generic [ref=e218]: R
+                - generic [ref=e219]: Reviewer Agent
+                - generic [ref=e220]: 9 min ago
+              - paragraph [ref=e221]: Consider adding concrete examples or references to strengthen this section's credibility.
+          - generic [ref=e222]:
+            - generic [ref=e223]:
+              - heading "2. Goals" [level=2] [ref=e224]
+              - textbox "Start writing…" [ref=e225]: • Unify AI drafting, review, and human collaboration in one workspace. • Make AI suggestions visible, reviewable, and actionable. • Preserve a clear history of decisions and changes. • Improve documentation quality and speed by at least 30%, measured by time-to-publish and reviewer satisfaction scores.
+            - button "R AI Reviewer 13 min ago Consider adding measurable success criteria. What does \"improve quality and speed\" mean for this project?" [ref=e228]:
+              - generic [ref=e229]:
+                - generic [ref=e230]: R
+                - generic [ref=e231]: AI Reviewer
+                - generic [ref=e232]: 13 min ago
+              - paragraph [ref=e233]: Consider adding measurable success criteria. What does "improve quality and speed" mean for this project?
+          - generic [ref=e235]:
+            - heading "3. Proposed Solution" [level=2] [ref=e236]
+            - textbox "Start writing…" [ref=e237]: A collaborative editor where AI agents can draft content, critique it, and suggest improvements inline. Humans retain full control to accept or reject changes.
+          - generic [ref=e239]:
+            - heading "4. Architecture" [level=2] [ref=e240]
+            - textbox "Start writing…" [ref=e241]: Web App (React) → AI Service → Document Store (PostgreSQL)
+          - generic [ref=e243]:
+            - heading "5. Risks & Mitigations" [level=2] [ref=e244]
+            - textbox "Start writing…" [ref=e245]: • Ensure documents are encrypted and access is scoped. • Over-reliance on AI – Keep humans in the loop for final decisions.
+      - generic [ref=e246]:
+        - generic [ref=e247]: 127 words
+        - generic [ref=e248]:
+          - img [ref=e249]
+          - text: Everyone can edit
+    - complementary [ref=e252]:
+      - generic [ref=e253]:
+        - heading "AI Assistant" [level=2] [ref=e254]
+        - generic [ref=e255]:
+          - paragraph [ref=e256]: Select an agent
+          - generic [ref=e257]:
+            - button "D Drafting Agent" [ref=e258]:
+              - generic [ref=e259]: D
+              - text: Drafting Agent
+            - button "R Reviewer Agent" [ref=e260]:
+              - generic [ref=e261]: R
+              - text: Reviewer Agent
+            - button "S Security Agent" [ref=e262]:
+              - generic [ref=e263]: S
+              - text: Security Agent
+            - button "C Clarity Agent" [ref=e264]:
+              - generic [ref=e265]: C
+              - text: Clarity Agent
+            - button "T Technical Risk Agent" [ref=e266]:
+              - generic [ref=e267]: T
+              - text: Technical Risk Agent
+        - generic [ref=e268]:
+          - paragraph [ref=e269]: Ask the Reviewer Agent
+          - generic [ref=e270]:
+            - textbox "Type your instructions…" [ref=e271]: Review this document for clarity, completeness, and any missing sections.
+            - button "Submit (⌘↵)" [ref=e272]:
+              - img [ref=e273]
+      - generic [ref=e275]:
+        - button "Suggestions 6" [ref=e276]:
+          - text: Suggestions
+          - generic [ref=e277]: "6"
+        - button "Comments 2" [ref=e278]:
+          - text: Comments
+          - generic [ref=e279]: "2"
+      - generic [ref=e281]:
+        - generic [ref=e282]:
+          - generic [ref=e283]:
+            - generic [ref=e284]: 1. Problem
+            - generic [ref=e285]: 9 min ago
+          - paragraph [ref=e286]: Quantify the impact of the problem with concrete numbers.
+          - generic [ref=e287]:
+            - button "Accept" [ref=e288]:
+              - img [ref=e289]
+              - text: Accept
+            - button "Dismiss" [ref=e291]:
+              - img [ref=e292]
+              - text: Dismiss
+        - generic [ref=e294]:
+          - generic [ref=e295]:
+            - generic [ref=e296]: 2. Goals
+            - generic [ref=e297]: 9 min ago
+          - paragraph [ref=e298]: Success metrics should be specific and measurable with clear numeric targets.
+          - generic [ref=e299]:
+            - button "Accept" [ref=e300]:
+              - img [ref=e301]
+              - text: Accept
+            - button "Dismiss" [ref=e303]:
+              - img [ref=e304]
+              - text: Dismiss
+        - generic [ref=e306]:
+          - generic [ref=e307]:
+            - generic [ref=e308]: 3. Proposed Solution
+            - generic [ref=e309]: 9 min ago
+          - paragraph [ref=e310]: Clarify component boundaries and data flow direction.
+          - generic [ref=e311]:
+            - button "Accept" [ref=e312]:
+              - img [ref=e313]
+              - text: Accept
+            - button "Dismiss" [ref=e315]:
+              - img [ref=e316]
+              - text: Dismiss
+        - generic [ref=e318]:
+          - generic [ref=e319]:
+            - generic [ref=e320]: Goals
+            - generic [ref=e321]: 13 min ago
+          - paragraph [ref=e322]: Add measurable success criteria.
+          - generic [ref=e324]:
+            - img [ref=e325]
+            - text: Applied to document
+        - generic [ref=e327]:
+          - generic [ref=e328]:
+            - generic [ref=e329]: Risks & Mitigations
+            - generic [ref=e330]: 13 min ago
+          - paragraph [ref=e331]: Security section is too vague. Consider adding access controls and audit logs.
+          - generic [ref=e332]:
+            - button "Accept" [ref=e333]:
+              - img [ref=e334]
+              - text: Accept
+            - button "Dismiss" [ref=e336]:
+              - img [ref=e337]
+              - text: Dismiss
+        - generic [ref=e339]:
+          - generic [ref=e340]:
+            - generic [ref=e341]: Architecture
+            - generic [ref=e342]: 13 min ago
+          - paragraph [ref=e343]: Explain how data persistence is handled.
+          - generic [ref=e344]:
+            - button "Accept" [ref=e345]:
+              - img [ref=e346]
+              - text: Accept
+            - button "Dismiss" [ref=e348]:
+              - img [ref=e349]
+              - text: Dismiss
+        - generic [ref=e351]:
+          - generic [ref=e352]:
+            - generic [ref=e353]: Proposed Solution
+            - generic [ref=e354]: 13 min ago
+          - paragraph [ref=e355]: Add examples of the AI review workflow.
+          - generic [ref=e356]:
+            - button "Accept" [ref=e357]:
+              - img [ref=e358]
+              - text: Accept
+            - button "Dismiss" [ref=e360]:
+              - img [ref=e361]
+              - text: Dismiss
+  - generic [ref=e363]:
+    - generic [ref=e364]: Activity
+    - generic [ref=e365]:
+      - generic [ref=e366]:
+        - generic [ref=e367]:
+          - generic [ref=e368]: R
+          - generic [ref=e369]:
+            - generic [ref=e370]:
+              - generic [ref=e371]: AI Reviewer
+              - img [ref=e373]
+            - generic [ref=e376]: Added 3 suggestions · 9 min ago
+        - img [ref=e377]
+      - generic [ref=e379]:
+        - generic [ref=e380]:
+          - generic [ref=e381]: K
+          - generic [ref=e382]:
+            - generic [ref=e383]:
+              - generic [ref=e384]: Khanh
+              - img [ref=e386]
+            - generic [ref=e388]: Accepted suggestion in Goals · 9 min ago
+        - img [ref=e389]
+      - generic [ref=e391]:
+        - generic [ref=e392]:
+          - generic [ref=e393]: R
+          - generic [ref=e394]:
+            - generic [ref=e395]:
+              - generic [ref=e396]: AI Reviewer
+              - img [ref=e398]
+            - generic [ref=e401]: Added 4 suggestions · 13 min ago
+        - img [ref=e402]
+      - generic [ref=e404]:
+        - generic [ref=e405]:
+          - generic [ref=e406]: K
+          - generic [ref=e407]:
+            - generic [ref=e408]:
+              - generic [ref=e409]: Khanh
+              - img [ref=e411]
+            - generic [ref=e413]: Edited Goals section · 15 min ago
+        - img [ref=e414]
+      - generic [ref=e416]:
+        - generic [ref=e417]:
+          - generic [ref=e418]: D
+          - generic [ref=e419]:
+            - generic [ref=e420]:
+              - generic [ref=e421]: Drafting Agent
+              - img [ref=e423]
+            - generic [ref=e425]: Created initial draft · 20 min ago
+        - img [ref=e426]
+      - generic [ref=e429]:
+        - generic [ref=e430]: K
+        - generic [ref=e431]:
+          - generic [ref=e432]:
+            - generic [ref=e433]: Khanh
+            - img [ref=e435]
+          - generic [ref=e437]: Created document · 25 min ago
