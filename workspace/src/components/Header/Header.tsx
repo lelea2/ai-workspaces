@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, useCallback } from 'react'
 import { useDocument } from '../../hooks/useDocument'
 import { useAI } from '../../hooks/useAI'
 import { useUI } from '../../store/UIContext'
@@ -11,6 +11,100 @@ const STATUS_STYLE: Record<DocumentStatus, string> = {
   approved: 'bg-green-50 text-green-700 border-green-200',
 }
 
+function SharePopup({
+  docId,
+  onClose,
+}: {
+  docId: string
+  onClose: () => void
+}) {
+  const [copied, setCopied] = useState(false)
+  const containerRef = useRef<HTMLDivElement>(null)
+  const url = `${window.location.origin}${window.location.pathname}?doc=${docId}`
+
+  useEffect(() => {
+    function handleClick(e: MouseEvent) {
+      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+        onClose()
+      }
+    }
+    function handleKey(e: KeyboardEvent) {
+      if (e.key === 'Escape') onClose()
+    }
+    document.addEventListener('mousedown', handleClick)
+    document.addEventListener('keydown', handleKey)
+    return () => {
+      document.removeEventListener('mousedown', handleClick)
+      document.removeEventListener('keydown', handleKey)
+    }
+  }, [onClose])
+
+  async function handleCopy() {
+    try {
+      await navigator.clipboard.writeText(url)
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
+    } catch {
+      // fallback: select the input text
+    }
+  }
+
+  return (
+    <div
+      ref={containerRef}
+      className="absolute top-full right-0 mt-2 w-80 bg-white border border-gray-200 rounded-xl shadow-lg p-4 z-50"
+    >
+      <div className="flex items-center justify-between mb-3">
+        <p className="text-sm font-semibold text-gray-900">Share document</p>
+        <button
+          onClick={onClose}
+          className="p-1 text-gray-400 hover:text-gray-600 rounded-md hover:bg-gray-100 transition-colors"
+        >
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+            <path d="M3 3l8 8M11 3L3 11" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+          </svg>
+        </button>
+      </div>
+      <p className="text-xs text-gray-500 mb-2">
+        Anyone with this link can view this document (no login required).
+      </p>
+      <div className="flex items-center gap-2">
+        <input
+          readOnly
+          value={url}
+          onFocus={(e) => e.target.select()}
+          className="flex-1 min-w-0 text-xs text-gray-700 bg-gray-50 border border-gray-200 rounded-lg px-2.5 py-2 outline-none font-mono truncate"
+        />
+        <button
+          onClick={handleCopy}
+          className={`shrink-0 flex items-center gap-1.5 px-3 py-2 text-xs font-medium rounded-lg transition-all ${
+            copied
+              ? 'bg-green-100 text-green-700 border border-green-200'
+              : 'bg-blue-600 text-white hover:bg-blue-700'
+          }`}
+        >
+          {copied ? (
+            <>
+              <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                <path d="M2 6l3 3 5-5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+              Copied
+            </>
+          ) : (
+            <>
+              <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                <rect x="4" y="1" width="7" height="8" rx="1" stroke="currentColor" strokeWidth="1.2" />
+                <path d="M1 4h2M1 4v7h7v-2" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+              Copy
+            </>
+          )}
+        </button>
+      </div>
+    </div>
+  )
+}
+
 export default function Header() {
   const { activeDocument, isReviewing, isGenerating, dispatch } = useDocument()
   const { runReview } = useAI()
@@ -18,7 +112,10 @@ export default function Header() {
 
   const [editingTitle, setEditingTitle] = useState(false)
   const [draftTitle, setDraftTitle] = useState('')
+  const [shareOpen, setShareOpen] = useState(false)
   const titleInputRef = useRef<HTMLInputElement>(null)
+  const shareContainerRef = useRef<HTMLDivElement>(null)
+  const closeShare = useCallback(() => setShareOpen(false), [])
 
   useEffect(() => {
     if (editingTitle) titleInputRef.current?.select()
@@ -125,13 +222,26 @@ export default function Header() {
           ))}
         </div>
 
-        <button className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 text-sm text-gray-700 border border-gray-300 rounded-md hover:bg-gray-50 transition-colors">
-          <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-            <path d="M9.5 2a1.5 1.5 0 1 1 0 3 1.5 1.5 0 0 1 0-3zM4.5 5.5a1.5 1.5 0 1 1 0 3 1.5 1.5 0 0 1 0-3zM9.5 9a1.5 1.5 0 1 1 0 3 1.5 1.5 0 0 1 0-3z" fill="currentColor" />
-            <path d="M8.06 3.97L5.94 5.53M8.06 10.03L5.94 8.47" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
-          </svg>
-          Share
-        </button>
+        <div ref={shareContainerRef} className="relative hidden sm:block">
+          <button
+            onClick={() => setShareOpen((o) => !o)}
+            disabled={!activeDocument}
+            className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-sm border rounded-md transition-colors disabled:opacity-40 disabled:cursor-not-allowed ${
+              shareOpen
+                ? 'bg-blue-50 text-blue-700 border-blue-300'
+                : 'text-gray-700 border-gray-300 hover:bg-gray-50'
+            }`}
+          >
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+              <path d="M9.5 2a1.5 1.5 0 1 1 0 3 1.5 1.5 0 0 1 0-3zM4.5 5.5a1.5 1.5 0 1 1 0 3 1.5 1.5 0 0 1 0-3zM9.5 9a1.5 1.5 0 1 1 0 3 1.5 1.5 0 0 1 0-3z" fill="currentColor" />
+              <path d="M8.06 3.97L5.94 5.53M8.06 10.03L5.94 8.47" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
+            </svg>
+            Share
+          </button>
+          {shareOpen && activeDocument && (
+            <SharePopup docId={activeDocument.id} onClose={closeShare} />
+          )}
+        </div>
 
         <button
           onClick={handleRunReview}

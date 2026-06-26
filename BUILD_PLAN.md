@@ -189,7 +189,7 @@ Suggestions tab: cards with `Accept` / `Dismiss` per suggestion, showing `reason
 - Templates create documents with real pre-filled section content (not empty sections)
 - Error toast: 5s auto-dismiss, fixed-position, dismissible
 
-### Milestone 1.8 — Human comments & replies (day ~1.5h) ⬅ MISSING
+### Milestone 1.8 — Human comments & replies ✅ DONE
 
 Two human authoring flows are currently absent from Phase 1:
 
@@ -253,6 +253,22 @@ New `ActivityEvent` type value: `'replied'`
 - The AI Panel Comments tab should also show replies when a comment is expanded
 
 **Phase 1 exit criteria (updated)**: A reviewer can open the app, create a new document from a template, generate a draft, edit sections, run AI review, accept/reject suggestions, add their own inline comments on any section, reply to any comment (AI or human), and see the full activity history — all with mock data that persists on refresh.
+
+### Milestone 1.9 — URL-based document routing + Share ✅ DONE
+
+**Gap identified**: There was no way to link someone directly to a specific document, and the "Share" button was a visual placeholder with no behavior.
+
+**URL routing** (`DocumentContext.tsx`):
+- On mount, `loadState()` reads `?doc=<id>` from the URL and uses it as `activeDocumentId` if the ID matches a loaded document (URL param takes priority over localStorage)
+- A `useEffect` watching `activeDocumentId` calls `window.history.replaceState` to keep the URL in sync whenever the user switches documents — no full navigation, no history stack pollution
+- Navigating directly to `http://app/?doc=doc-123` in a fresh tab loads that exact document immediately
+
+**Share popup** (`Header.tsx`):
+- Clicking the Share button opens a floating card below it (click-outside + Escape to close)
+- Card shows: a read-only monospace input with the full URL (`origin + pathname + ?doc=<id>`), a Copy button that writes to clipboard and shows a "Copied ✓" confirmation for 2 s
+- No authentication or permission model in scope — the URL itself is the access mechanism
+
+**Phase 1 exit criteria (final)**: A reviewer can open the app, navigate to a document by URL, create a new document from a template, generate a draft, edit sections, run AI review, accept/reject suggestions, add their own inline comments on any section, reply to any comment (AI or human), see the full activity history, and share a direct link to any document — all with mock data that persists on refresh.
 
 ---
 

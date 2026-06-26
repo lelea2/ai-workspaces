@@ -6,19 +6,28 @@ import { documentReducer, initialState } from './documentReducer'
 const STORAGE_KEY_DOCS = 'ai-workspace-docs'
 const STORAGE_KEY_ACTIVE = 'ai-workspace-active'
 
+function getUrlDocId(): string | null {
+  return new URLSearchParams(window.location.search).get('doc')
+}
+
 function loadState(): AppState {
+  const urlDocId = getUrlDocId()
   try {
     const docs = localStorage.getItem(STORAGE_KEY_DOCS)
     const activeId = localStorage.getItem(STORAGE_KEY_ACTIVE)
     if (docs) {
-      return {
-        ...initialState,
-        documents: JSON.parse(docs) as Document[],
-        activeDocumentId: activeId ?? initialState.activeDocumentId,
-      }
+      const documents = JSON.parse(docs) as Document[]
+      const resolvedActiveId =
+        urlDocId && documents.some((d) => d.id === urlDocId)
+          ? urlDocId
+          : activeId ?? initialState.activeDocumentId
+      return { ...initialState, documents, activeDocumentId: resolvedActiveId }
     }
   } catch {
     // corrupted storage — fall through to seed data
+  }
+  if (urlDocId && initialState.documents.some((d) => d.id === urlDocId)) {
+    return { ...initialState, activeDocumentId: urlDocId }
   }
   return initialState
 }
@@ -45,6 +54,13 @@ export function DocumentProvider({ children }: { children: ReactNode }) {
       // storage quota exceeded — silently ignore
     }
   }, [state.documents, state.activeDocumentId])
+
+  useEffect(() => {
+    if (!state.activeDocumentId) return
+    const url = new URL(window.location.href)
+    url.searchParams.set('doc', state.activeDocumentId)
+    window.history.replaceState(null, '', url.toString())
+  }, [state.activeDocumentId])
 
   const value = useMemo<ContextValue>(
     () => ({
