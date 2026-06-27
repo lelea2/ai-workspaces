@@ -416,32 +416,37 @@ Dev startup (`package.json` at root, using `concurrently`):
 }
 ```
 
-### Step 3.2 — Client proxy service + provider toggle ✅ DONE
+### Step 3.2 — Client proxy service ✅ DONE (revised)
 
-**`workspace/src/services/ai/proxy.ts`** — calls Express, no key in browser:
-```ts
-export class ProxyAIService implements AIService {
-  async generateDraft(prompt) {
-    const res = await fetch('/api/ai/draft', { method: 'POST', body: JSON.stringify({ prompt }) })
-    if (!res.ok) throw new Error(await res.text())
-    return res.json()  // Section[]
-  }
-  async reviewDocument(doc, agentName) {
-    const res = await fetch('/api/ai/review', { method: 'POST', body: JSON.stringify({ document: doc, agentName }) })
-    if (!res.ok) throw new Error(await res.text())
-    return res.json()  // { comments, suggestions }
-  }
-}
-```
+**Architecture gap (identified post-implementation):** The original toggle (`VITE_AI_PROVIDER=mock → MockAIService`, `proxy → ProxyAIService`) meant all agent actions (draft, review, security, clarity, technical risk) bypassed the server entirely in mock mode — no logging, no request pipeline, no server-side error handling exercised. The full hook was never invoked.
 
-**`workspace/src/services/ai/index.ts`** — switch on `VITE_AI_PROVIDER`:
+**Fix:** Client always calls the server via `ProxyAIService`. The server decides mock vs. real based on `MOCK_AI` env var. This ensures every agent action (draft, review, all agent types) flows through the same API pipeline regardless of whether OpenAI is wired up.
+
+**`workspace/src/services/ai/index.ts`** — always uses ProxyAIService:
 ```ts
 export function getAIService(): AIService {
-  return import.meta.env.VITE_AI_PROVIDER === 'proxy'
-    ? new ProxyAIService()
-    : new MockAIService()
+  return new ProxyAIService()
 }
 ```
+
+**`server/mock.ts`** — deterministic mock responses, mirrors the old client-side MockAIService:
+```ts
+export function mockDraft(prompt: string): Section[]
+export function mockReview(doc, agentName: string): { comments, suggestions }
+```
+
+**`server/routes/ai.ts`** — branches on `MOCK_AI` env var:
+```ts
+if (process.env.MOCK_AI === 'true') {
+  return res.json(mockDraft(prompt))   // draft endpoint
+  return res.json(mockReview(doc, agentName))  // review endpoint
+}
+// else: call OpenAI as before
+```
+
+**`.env` default:** `MOCK_AI=true` — works without an OpenAI key. Set `MOCK_AI=false` + valid `OPENAI_API_KEY` for real AI.
+
+**Logging:** Server logs `provider=mock` or `provider=openai` per request so it is always visible which path ran.
 
 ### Step 3.3 — Prompt design ✅ DONE
 

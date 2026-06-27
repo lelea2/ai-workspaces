@@ -24,6 +24,6 @@ app.listen(PORT, () => {
   if (!process.env.OPENAI_API_KEY || process.env.OPENAI_API_KEY === 'sk-xxxxx') {
     console.warn('⚠  OPENAI_API_KEY is not set — /api/ai routes will fail')
   }
-  // console.log(`Server listening on http://localhost:${PORT}, open_api_key=${process.env.OPENAI_API_KEY}`);
-  console.log(`Server listening on http://localhost:${PORT});
+  const mode = process.env.MOCK_AI === 'true' ? 'mock' : 'openai'
+  console.log(`Server listening on http://localhost:${PORT}  (provider=${mode})`)
 })

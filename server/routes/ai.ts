@@ -1,6 +1,9 @@
 import { Router } from 'express'
 import { openai } from '../openai.js'
 import { getDraftSystemPrompt, getReviewSystemPrompt } from '../prompts.js'
+import { mockDraft, mockReview } from '../mock.js'
+
+const USE_MOCK = process.env.MOCK_AI === 'true'
 
 // Minimal types mirroring the client — avoids importing across package boundaries
 type Section = { id: string; heading: string; body: string }
@@ -45,7 +48,15 @@ aiRouter.post('/draft', async (req, res) => {
     return
   }
 
-  console.log('[ai] provider=openai  op=draft')
+  const provider = USE_MOCK ? 'mock' : 'openai'
+  console.log(`[ai] provider=${provider}  op=draft`)
+
+  if (USE_MOCK) {
+    const sections = mockDraft(prompt)
+    console.log(`[ai] draft  sections=${sections.length}  status=200`)
+    res.json(sections)
+    return
+  }
 
   try {
     const completion = await openai.chat.completions.create({
@@ -90,7 +101,15 @@ aiRouter.post('/review', async (req, res) => {
     return
   }
 
-  console.log(`[ai] provider=openai  op=review  agent="${agentName}"`)
+  const provider = USE_MOCK ? 'mock' : 'openai'
+  console.log(`[ai] provider=${provider}  op=review  agent="${agentName}"`)
+
+  if (USE_MOCK) {
+    const result = mockReview(doc, agentName)
+    console.log(`[ai] review  agent="${agentName}"  comments=${result.comments.length}  suggestions=${result.suggestions.length}  status=200`)
+    res.json(result)
+    return
+  }
 
   const docText = doc.sections
     .map((s) => `## ${s.heading} [sectionId: ${s.id}]\n\n${s.body || '(empty)'}`)
