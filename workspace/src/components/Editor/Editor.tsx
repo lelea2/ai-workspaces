@@ -1,6 +1,8 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { useDocument } from '../../hooks/useDocument'
 import { formatRelativeTime } from '../../utils/time'
+import { extractPlainText } from '../../utils/lexical'
+import LexicalEditor from './LexicalEditor'
 import type { Comment, Section } from '../../types'
 import type { Action } from '../../store/actions'
 
@@ -29,19 +31,6 @@ function GeneratingSkeleton() {
         </div>
       ))}
     </div>
-  )
-}
-
-// ---------- Toolbar ----------
-
-function ToolbarButton({ children, title }: { children: React.ReactNode; title: string }) {
-  return (
-    <button
-      title={title}
-      className="p-1.5 text-gray-500 hover:text-gray-800 hover:bg-gray-100 rounded transition-colors text-xs font-medium min-w-7 flex items-center justify-center"
-    >
-      {children}
-    </button>
   )
 }
 
@@ -217,28 +206,25 @@ function SectionRow({
   comments: Comment[]
   dispatch: React.Dispatch<Action>
 }) {
-  const [body, setBody] = useState(section.body)
   const [expandedCommentId, setExpandedCommentId] = useState<string | null>(null)
   const [composing, setComposing] = useState(false)
   const [commentText, setCommentText] = useState('')
-  const committedBody = useRef(section.body)
+  const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const composeRef = useRef<HTMLTextAreaElement>(null)
-
-  useEffect(() => {
-    setBody(section.body)
-    committedBody.current = section.body
-  }, [section.body])
 
   useEffect(() => {
     if (composing) composeRef.current?.focus()
   }, [composing])
 
-  function handleBlur() {
-    if (body !== committedBody.current) {
-      dispatch({ type: 'EDIT_SECTION', docId, sectionId: section.id, body })
-      committedBody.current = body
-    }
-  }
+  // Debounced save — fires 600ms after the user stops typing
+  const handleBodyChange = useCallback((json: string) => {
+    if (saveTimer.current) clearTimeout(saveTimer.current)
+    saveTimer.current = setTimeout(() => {
+      dispatch({ type: 'EDIT_SECTION', docId, sectionId: section.id, body: json })
+    }, 600)
+  }, [dispatch, docId, section.id])
+
+  useEffect(() => () => { if (saveTimer.current) clearTimeout(saveTimer.current) }, [])
 
   function handleResolve(commentId: string) {
     dispatch({ type: 'RESOLVE_COMMENT', docId, commentId })
@@ -268,20 +254,15 @@ function SectionRow({
     }
   }
 
-  const rows = Math.max(3, body.split('\n').length + 1)
-
   return (
     <div className="flex items-start group">
       {/* Section content */}
       <div className="flex-1 min-w-0">
         <h2 className="text-base font-semibold text-gray-900 mb-2">{section.heading}</h2>
-        <textarea
-          value={body}
-          onChange={(e) => setBody(e.target.value)}
-          onBlur={handleBlur}
-          rows={rows}
-          placeholder="Start writing…"
-          className="w-full text-sm text-gray-700 leading-relaxed resize-none outline-none border border-transparent rounded-md px-2 py-1.5 focus:border-blue-300 focus:bg-blue-50/30 hover:border-gray-200 transition-colors bg-transparent placeholder-gray-300"
+        <LexicalEditor
+          sectionId={section.id}
+          body={section.body}
+          onChange={handleBodyChange}
         />
       </div>
 
@@ -394,51 +375,13 @@ export default function Editor() {
   }
 
   const wordCount = activeDocument.sections
-    .map((s) => s.body.trim())
+    .map((s) => extractPlainText(s.body).trim())
     .join(' ')
     .split(/\s+/)
     .filter(Boolean).length
 
   return (
     <main className="flex-1 flex flex-col overflow-hidden bg-white border-r border-gray-200">
-      {/* Toolbar */}
-      <div className="flex items-center gap-0.5 px-4 py-2 border-b border-gray-100 shrink-0">
-        <ToolbarButton title="Heading 1"><span className="font-bold">H1</span></ToolbarButton>
-        <ToolbarButton title="Heading 2"><span className="font-bold">H2</span></ToolbarButton>
-        <ToolbarButton title="Heading 3"><span className="font-bold">H3</span></ToolbarButton>
-        <div className="w-px h-5 bg-gray-200 mx-1" />
-        <ToolbarButton title="Bold"><span className="font-bold">B</span></ToolbarButton>
-        <ToolbarButton title="Italic"><span className="italic">I</span></ToolbarButton>
-        <ToolbarButton title="Underline"><span className="underline">U</span></ToolbarButton>
-        <div className="w-px h-5 bg-gray-200 mx-1" />
-        <ToolbarButton title="Bullet list">
-          <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-            <circle cx="2.5" cy="4" r="1" fill="currentColor" />
-            <circle cx="2.5" cy="7" r="1" fill="currentColor" />
-            <circle cx="2.5" cy="10" r="1" fill="currentColor" />
-            <path d="M5 4h7M5 7h7M5 10h7" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
-          </svg>
-        </ToolbarButton>
-        <ToolbarButton title="Numbered list">
-          <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-            <path d="M1.5 3h1.5M2.5 3v3M1.5 6h2M1.5 8.5c0-.8.5-1 1-1 .6 0 1 .3 1 .7 0 .4-.3.7-.8 1.1L1.5 10.5H4.5" stroke="currentColor" strokeWidth="1.1" strokeLinecap="round" strokeLinejoin="round" />
-            <path d="M6 4h6M6 7h6M6 10h6" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
-          </svg>
-        </ToolbarButton>
-        <div className="w-px h-5 bg-gray-200 mx-1" />
-        <ToolbarButton title="Link">
-          <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-            <path d="M5.5 8.5a3.5 3.5 0 0 0 5 0l1.5-1.5a3.5 3.5 0 0 0-5-5L6 3" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
-            <path d="M8.5 5.5a3.5 3.5 0 0 0-5 0L2 7a3.5 3.5 0 0 0 5 5L8 11" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
-          </svg>
-        </ToolbarButton>
-        <ToolbarButton title="Code">
-          <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-            <path d="M4.5 4.5L2 7l2.5 2.5M9.5 4.5L12 7l-2.5 2.5M7.5 3l-1 8" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" />
-          </svg>
-        </ToolbarButton>
-      </div>
-
       {/* Generating progress bar */}
       {isGenerating && (
         <div className="h-0.5 bg-blue-50 shrink-0 overflow-hidden">

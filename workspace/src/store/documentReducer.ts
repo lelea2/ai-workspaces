@@ -1,5 +1,6 @@
 import type { AppState, Document, ActivityEvent, Reply } from '../types'
 import type { Action } from './actions'
+import { lexicalReplaceText } from '../utils/lexical'
 
 export const initialState: AppState = {
   documents: [],
@@ -151,7 +152,7 @@ export function documentReducer(state: AppState, action: Action): AppState {
 
         const updatedSections = doc.sections.map((section) => {
           if (section.id !== suggestion.sectionId) return section
-          return { ...section, body: section.body.replace(suggestion.originalText, suggestion.suggestedText) }
+          return { ...section, body: lexicalReplaceText(section.body, suggestion.originalText, suggestion.suggestedText) }
         })
 
         const updatedDoc: Document = {

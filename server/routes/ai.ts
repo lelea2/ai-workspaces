@@ -2,6 +2,7 @@ import { Router } from 'express'
 import { openai } from '../openai.js'
 import { getDraftSystemPrompt, getReviewSystemPrompt } from '../prompts.js'
 import { mockDraft, mockReview } from '../mock.js'
+import { extractPlainText } from '../lexical.js'
 
 const USE_MOCK = process.env.MOCK_AI === 'true'
 
@@ -112,7 +113,7 @@ aiRouter.post('/review', async (req, res) => {
   }
 
   const docText = doc.sections
-    .map((s) => `## ${s.heading} [sectionId: ${s.id}]\n\n${s.body || '(empty)'}`)
+    .map((s) => `## ${s.heading} [sectionId: ${s.id}]\n\n${extractPlainText(s.body) || '(empty)'}`)
     .join('\n\n')
 
   try {
@@ -158,9 +159,11 @@ aiRouter.post('/review', async (req, res) => {
     const sectionMap = Object.fromEntries(doc.sections.map((s) => [s.id, s]))
     const suggestions = (parsed.suggestions ?? [])
       .filter((s) => {
-        // Validate that originalText is actually present in the section body
+        // Validate originalText against plain text (body may be Lexical JSON)
         const section = sectionMap[s.sectionId]
-        return section && section.body.includes(s.originalText)
+        if (!section) return false
+        const plain = extractPlainText(section.body)
+        return plain.includes(s.originalText)
       })
       .map((s, i) => ({
         id: `suggestion-${t}-${i}`,
