@@ -272,38 +272,45 @@ New `ActivityEvent` type value: `'replied'`
 
 ---
 
-## Phase 2 — Local DB (In-Memory Store + localStorage)
+## Phase 2 — Local DB (In-Memory Store + localStorage) ✅ DONE
 
-**Goal**: Remove all hardcoded data from components. Every read comes from the store; every write goes through a reducer action and is persisted to localStorage. The app behaves identically to Phase 1 from the outside, but data is now live and consistent.
+**Note**: Phase 2 was implemented concurrently with Phase 1. All components were wired to the live store from the start — no hardcoded data was ever shipped in components. All milestones below are complete.
 
-### Milestone 2.1 — Types + seed data (~45 min)
+### Milestone 2.1 — Types + seed data ✅ DONE
 
-Create `src/types/index.ts` with all shared types (Document, Section, Comment, Suggestion, ActivityEvent — matching the Data Model section above).
+**`src/types/index.ts`** — complete type definitions:
+- `Document`, `Section`, `Comment`, `Reply`, `Suggestion`, `ActivityEvent`, `AppState`
+- `Reply` (added in M1.8) extends `Comment` with threaded replies
+- `ActivityEvent.type` union: `created | drafted | reviewed | edited | accepted | rejected | resolved | commented | replied`
 
-Create `src/data/seed.ts` — 4 fully-populated documents matching the design:
+**`src/data/seed.ts`** — 6 fully-populated seed documents (exceeds original 4-doc spec):
 
 | Document | Status | Sections | Suggestions | Comments |
 |---|---|---|---|---|
-| AI Document Collaboration – Technical Design Doc | reviewing | Problem, Proposed Solution, Architecture, Risks & Mitigations | 4 pending | 1 open on Problem |
-| Product Requirements – v2 | draft | Overview, Goals, Requirements, Out of Scope | 0 | 0 |
-| Security Review – Q2 | approved | Scope, Findings, Recommendations, Sign-off | 0 | 0 |
-| Project Plan – Phoenix | draft | Objectives, Timeline, Team, Risks | 2 pending | 0 |
+| AI Document Collaboration – Technical Design Doc | reviewing | 5 sections | 4 pending | 1 open (Goals) |
+| Product Requirements – v2 | draft | 4 sections | 0 | 0 |
+| Security Review – Q2 | approved | 4 sections | 0 | 0 |
+| Project Plan – Phoenix | reviewing | 4 sections | 2 pending | 0 |
+| Launch Plan – v1.0 | draft | 3 sections | 0 | 0 |
+| Incident Review 2024-05 | approved | 4 sections | 0 | 0 |
 
-Create `src/data/templates.ts` — 5 templates, each with a name and ordered list of section headings with short placeholder body text (used when creating a new document from template).
+Each document has a properly-ordered `events[]` with realistic relative timestamps via the `now(offset)` utility.
 
-Create `src/data/agentPrompts.ts` — default prompt text per agent (already shown in Milestone 1.4 table).
+**`src/data/templates.ts`** — 5 templates (Product Spec, Technical Design Doc, Security Review, Project Plan, Incident Review). Each template section has a real placeholder body with `[bracket]` prompts so users know what to fill in. `buildTemplateSections()` generates stable IDs using `Date.now()`.
+
+**`src/data/agentPrompts.ts`** — `AgentConfig[]` with 5 agents, each with id, name, color classes, initial letter, default prompt, and `type: 'draft' | 'review'` to drive the submit path.
 
 ---
 
-### Milestone 2.2 — Reducer + context + localStorage sync (~1.5h)
+### Milestone 2.2 — Reducer + context + localStorage sync ✅ DONE
 
-**`src/store/actions.ts`** — full action type union:
+**`src/store/actions.ts`** — full action union (14 actions including M1.8 additions):
 
 ```ts
 type Action =
   | { type: 'SET_ACTIVE_DOCUMENT'; id: string }
   | { type: 'CREATE_DOCUMENT'; title: string; sections: Section[] }
-  | { type: 'UPDATE_DOCUMENT_TITLE'; id: string; title: string }
+  | { type: 'UPDATE_DOCUMENT_TITLE'; docId: string; title: string }
   | { type: 'EDIT_SECTION'; docId: string; sectionId: string; body: string }
   | { type: 'GENERATE_DRAFT_START'; docId: string }
   | { type: 'GENERATE_DRAFT_SUCCESS'; docId: string; sections: Section[] }
@@ -312,76 +319,34 @@ type Action =
   | { type: 'ACCEPT_SUGGESTION'; docId: string; suggestionId: string }
   | { type: 'REJECT_SUGGESTION'; docId: string; suggestionId: string }
   | { type: 'RESOLVE_COMMENT'; docId: string; commentId: string }
+  | { type: 'ADD_COMMENT'; docId: string; sectionId: string; text: string }
+  | { type: 'REPLY_TO_COMMENT'; docId: string; commentId: string; text: string }
   | { type: 'AI_ERROR'; docId: string; error: string }
 ```
 
-**`src/store/documentReducer.ts`** — pure function, handles each action:
+**`src/store/documentReducer.ts`** — pure reducer; `updateDoc()` helper keeps doc mutations concise. `recalcStatus()` auto-promotes `reviewing → approved` when all suggestions are non-pending. Every mutation prepends an `ActivityEvent`.
 
-- `EDIT_SECTION`: updates the matching section's `body` and appends an `edited` ActivityEvent
-- `ACCEPT_SUGGESTION`: finds section, replaces `originalText` with `suggestedText`, marks suggestion `accepted`, appends `accepted` event, recalculates document `status`
-- `REJECT_SUGGESTION`: marks suggestion `rejected`, appends `rejected` event
-- `RESOLVE_COMMENT`: marks comment `resolved`, appends `resolved` event
-- `GENERATE_DRAFT_SUCCESS`: replaces all sections, sets status to `draft`, appends `drafted` event
-- `RUN_REVIEW_SUCCESS`: merges new comments + suggestions, sets status to `reviewing`, appends `reviewed` event
-- Document `status` auto-progression: `reviewing` → `approved` when all suggestions are resolved (accepted or rejected)
+**`src/store/DocumentContext.tsx`** — two `useEffect` hooks:
+1. Sync `documents[]` + `activeDocumentId` to localStorage on every state change
+2. Sync `?doc=<id>` URL param via `history.replaceState` on active doc change (M1.9)
 
-**`src/store/DocumentContext.tsx`** — the provider:
+`loadState()` priority: URL param → localStorage → seed data.
 
-```ts
-// On mount: hydrate from localStorage, fall back to seed
-const stored = localStorage.getItem('ai-workspace-docs')
-const initial = stored ? JSON.parse(stored) : seedDocuments
-
-// After every dispatch: sync to localStorage
-useEffect(() => {
-  localStorage.setItem('ai-workspace-docs', JSON.stringify(state.documents))
-  localStorage.setItem('ai-workspace-active', state.activeDocumentId)
-}, [state])
-```
-
-Exposes via context: `{ documents, activeDocumentId, activeDocument, isGenerating, isReviewing, dispatch }`.
-
-**`src/hooks/useDocument.ts`** — convenience hook returning the above + typed dispatch wrappers (e.g. `editSection(sectionId, body)`, `acceptSuggestion(suggestionId)`).
+**`src/hooks/useDocument.ts`** — one-line context reader; components call `dispatch` directly with typed actions (raw dispatch is more readable than wrappers for this action volume).
 
 ---
 
-### Milestone 2.3 — Wire all components to the store (~2h)
+### Milestone 2.3 — Wire all components to the store ✅ DONE
 
-Replace every hardcoded value in components with data from `useDocument()`:
+All components read exclusively from `useDocument()`:
 
-**Sidebar:**
-- `documents` list from context — clicking dispatches `SET_ACTIVE_DOCUMENT`
-- Active document highlighted by comparing `id` to `activeDocumentId`
-- **"+" button** → opens a modal or inline title input → dispatches `CREATE_DOCUMENT` with blank sections
-- **Template click** → dispatches `CREATE_DOCUMENT` with sections pre-filled from `templates.ts`
-- Search filters the `documents` list client-side (no dispatch needed)
+- **Sidebar**: `documents[]` from context, `SET_ACTIVE_DOCUMENT` on click, `CREATE_DOCUMENT` for new docs and template clicks, client-side search filter
+- **Header**: title/status/saved-time from `activeDocument`, `UPDATE_DOCUMENT_TITLE` on blur, `Run AI Review` → `useAI().runReview()`, disabled during AI operations, Share popup with URL copy (M1.9)
+- **Editor**: sections from `activeDocument.sections`, `EDIT_SECTION` on textarea blur, comment bubbles filtered by `sectionId + status === 'open'`, `+` hover button → `ADD_COMMENT`, reply compose → `REPLY_TO_COMMENT` (M1.8)
+- **AI Panel**: suggestions + comments from `activeDocument`, accept/dismiss/resolve dispatch to reducer, agent selector pre-fills prompt textarea, submit calls `useAI()` which routes to draft or review flow
+- **Timeline**: `activeDocument.events` newest first, type icon per event (14 event types including `commented` and `replied`)
 
-**Header:**
-- Title, status badge, "Saved X min ago" from `activeDocument`
-- Title is editable (contentEditable or input) → on blur dispatches `UPDATE_DOCUMENT_TITLE`
-- **Run AI Review** button → triggers the same flow as Milestone 1.4 (dispatches `RUN_REVIEW_START`, calls mock, dispatches `RUN_REVIEW_SUCCESS`)
-- Button disabled while `isReviewing`
-
-**Editor:**
-- Sections rendered from `activeDocument.sections`
-- Section `textarea` `onBlur` → dispatches `EDIT_SECTION`
-- Comment bubbles rendered from `activeDocument.comments` filtered by `sectionId` and `status === "open"`
-- Empty state shown when `activeDocument` has no sections yet ("Generate a draft to get started")
-
-**AI Panel:**
-- Suggestions from `activeDocument.suggestions`
-- Comments from `activeDocument.comments`
-- Accept → dispatches `ACCEPT_SUGGESTION`; Reject → dispatches `REJECT_SUGGESTION`
-- Resolve comment → dispatches `RESOLVE_COMMENT`
-- Submitting the prompt box → dispatches `GENERATE_DRAFT_START` or `RUN_REVIEW_START` depending on active agent, then calls `mockGenerateDraft` / `mockReviewDocument`, then dispatches success/error action
-
-**Timeline:**
-- Events from `activeDocument.events`, sorted newest first
-- Each event rendered with correct actor avatar, label, and relative timestamp
-
----
-
-**Phase 2 exit criteria**: All data flows through the store. Hardcoded arrays in components are gone. Creating a new document, editing sections, running mock AI review, accepting/rejecting suggestions, and resolving comments all persist across page refresh via localStorage. Switching between documents in the sidebar loads each document's own state correctly.
+**Phase 2 exit criteria** ✅: All data flows through the store. No hardcoded data in components. Creating documents, editing sections, AI review, accept/reject, human comments, replies, and resolves all persist across page refresh. Switching documents loads isolated state. URL param deep-links to any document.
 
 ---
 
@@ -389,99 +354,119 @@ Replace every hardcoded value in components with data from `useDocument()`:
 
 **Goal**: Replace mock responses with `gpt-4o` calls. Zero UX changes. API key never leaves the server.
 
-### Step 3.1 — Express server
+### Step 3.0 — Environment files ✅ DONE
 
-```ts
-// server/index.ts
-import express from "express";
-import { aiRouter } from "./routes/ai";
-import path from "path";
+Two env files control the split between server secrets and client config:
 
-const app = express();
-app.use(express.json());
-app.use("/api/ai", aiRouter);
-
-// Serve built Vite app in production
-if (process.env.NODE_ENV === "production") {
-  app.use(express.static(path.join(__dirname, "../dist")));
-  app.get("*", (_, res) => res.sendFile(path.join(__dirname, "../dist/index.html")));
-}
-
-app.listen(3001);
-```
-
-```ts
-// server/routes/ai.ts — exposes two endpoints
-POST /api/ai/draft    body: { prompt: string, template?: string }   → Section[]
-POST /api/ai/review   body: { document: Document, agentName: string } → { comments, suggestions }
-```
-
-```ts
-// server/openai.ts — reads key from process.env only
-import OpenAI from "openai";
-const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
-```
-
-### Step 3.2 — Environment files
-
+**`/.env`** (git-ignored, fill in before running server):
 ```env
-# .env  (git-ignored, never committed)
-OPENAI_API_KEY=sk-...       # server only — no VITE_ prefix, Vite never sees it
-VITE_AI_PROVIDER=openai     # client toggle — no secret value
+OPENAI_API_KEY=sk-xxxxx    # server only — no VITE_ prefix, Vite never sees it
+PORT=3001
 ```
 
+**`/workspace/.env`** (committed, no secrets):
 ```env
-# .env.example  (committed)
-OPENAI_API_KEY=sk-...
+# 'mock' — deterministic responses, no server needed (default)
+# 'proxy' — calls Express /api/ai/*, requires OPENAI_API_KEY in root .env
 VITE_AI_PROVIDER=mock
 ```
 
-The client proxy service (`src/services/ai/proxy.ts`) calls `fetch("/api/ai/draft")` and `fetch("/api/ai/review")` — no key in the browser at all.
+To switch to real AI: set `OPENAI_API_KEY=sk-...` in root `.env`, start the server, then change `workspace/.env` to `VITE_AI_PROVIDER=proxy`.
 
-### Step 3.3 — Vite dev proxy config
+The Vite proxy (`workspace/vite.config.ts`) already forwards `/api → http://localhost:3001` — no further config needed.
 
+### Step 3.1 — Express server + routes ✅ DONE
+
+**`server/index.ts`** — Express app with dotenv, JSON middleware, `/api/ai` router:
 ```ts
-// vite.config.ts
-server: {
-  proxy: {
-    "/api": "http://localhost:3001"
-  }
+import 'dotenv/config'
+import express from 'express'
+import { aiRouter } from './routes/ai'
+import path from 'path'
+
+const app = express()
+app.use(express.json())
+app.use('/api/ai', aiRouter)
+
+if (process.env.NODE_ENV === 'production') {
+  app.use(express.static(path.join(__dirname, '../workspace/dist')))
+  app.get('*', (_, res) => res.sendFile(path.join(__dirname, '../workspace/dist/index.html')))
 }
+
+app.listen(Number(process.env.PORT ?? 3001))
 ```
 
-Dev startup (via `concurrently`):
+**`server/routes/ai.ts`** — two endpoints:
+```
+POST /api/ai/draft    body: { prompt: string }                        → Section[]
+POST /api/ai/review   body: { document: Document, agentName: string } → { comments, suggestions }
+```
+
+**`server/openai.ts`** — singleton client, reads key from `process.env` only:
+```ts
+import OpenAI from 'openai'
+export const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
+```
+
+Dev startup (`package.json` at root, using `concurrently`):
 ```json
 "scripts": {
-  "dev": "concurrently \"vite\" \"ts-node server/index.ts\"",
-  "build": "vite build",
+  "dev": "concurrently \"npm run dev --prefix workspace\" \"tsx watch server/index.ts\"",
   "start": "node dist-server/index.js"
 }
 ```
 
-### Step 3.4 — Prompt design
+### Step 3.2 — Client proxy service + provider toggle ✅ DONE
 
-**`generateDraft`:**
-```
-System: You are a document drafting agent. Return ONLY a JSON array of sections:
-        [{id, heading, body}]. Match this template: {templateName}.
-        Be specific and realistic. ~100 words per section.
-User:   {userPrompt}
+**`workspace/src/services/ai/proxy.ts`** — calls Express, no key in browser:
+```ts
+export class ProxyAIService implements AIService {
+  async generateDraft(prompt) {
+    const res = await fetch('/api/ai/draft', { method: 'POST', body: JSON.stringify({ prompt }) })
+    if (!res.ok) throw new Error(await res.text())
+    return res.json()  // Section[]
+  }
+  async reviewDocument(doc, agentName) {
+    const res = await fetch('/api/ai/review', { method: 'POST', body: JSON.stringify({ document: doc, agentName }) })
+    if (!res.ok) throw new Error(await res.text())
+    return res.json()  // { comments, suggestions }
+  }
+}
 ```
 
-**`reviewDocument`:**
-```
-System: You are a {agentName}. Review the document and return ONLY JSON:
-        { comments: [{sectionId, text}], suggestions: [{sectionId, originalText, suggestedText, reason}] }
-        Be specific, actionable, and concise. originalText must be an exact substring of the section body.
-User:   {fullDocumentText serialized as markdown}
+**`workspace/src/services/ai/index.ts`** — switch on `VITE_AI_PROVIDER`:
+```ts
+export function getAIService(): AIService {
+  return import.meta.env.VITE_AI_PROVIDER === 'proxy'
+    ? new ProxyAIService()
+    : new MockAIService()
+}
 ```
 
-### Step 3.5 — Error handling
-- Server returns `{ error: string }` with appropriate HTTP status on failure
-- Client dispatches `AI_ERROR` action; AI panel shows error toast with retry button
-- Network errors (server down) show "AI unavailable — check connection"
+### Step 3.3 — Prompt design ✅ DONE
 
-**Phase 3 exit criteria**: Setting `VITE_AI_PROVIDER=openai` (with `OPENAI_API_KEY` in `.env`) produces real, context-aware drafts and reviews. UX is identical to Phases 1 & 2. Running `npm run build && npm start` serves the full app from Express on port 3001.
+**`generateDraft`** system prompt:
+```
+You are a document drafting agent. Return ONLY a valid JSON array of section objects:
+[{ "id": "<slug>", "heading": "<heading>", "body": "<body text>" }]
+Write ~100 words per section. Be specific and realistic. No markdown fences.
+```
+
+**`reviewDocument`** system prompt:
+```
+You are {agentName}. Review the document below and return ONLY valid JSON:
+{ "comments": [{ "sectionId": "...", "text": "..." }],
+  "suggestions": [{ "sectionId": "...", "originalText": "...", "suggestedText": "...", "reason": "..." }] }
+originalText MUST be an exact verbatim substring of the section body. Be specific and actionable.
+```
+
+### Step 3.4 — Error handling ✅ DONE
+- Server returns `{ error: string }` with HTTP 4xx/5xx on failure
+- Client dispatches `AI_ERROR`; existing error toast displays the message with 5s auto-dismiss
+- Network errors (server unreachable) caught in `useAI` and dispatched as `AI_ERROR`
+- `useAI.ts` updated: catch blocks now forward `err.message` instead of hardcoded strings — real OpenAI errors, quota messages, and "Failed to fetch" network errors all surface in the toast
+
+**Phase 3 exit criteria**: Setting `VITE_AI_PROVIDER=proxy` (with real `OPENAI_API_KEY`) produces context-aware drafts and reviews. Mock path still works without the server. Running `npm start` from root serves the full app from Express on port 3001.
 
 ---
 

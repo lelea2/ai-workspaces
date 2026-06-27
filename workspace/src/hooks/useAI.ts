@@ -10,8 +10,9 @@ export function useAI() {
     try {
       const sections = await getAIService().generateDraft(prompt)
       dispatch({ type: 'GENERATE_DRAFT_SUCCESS', docId: activeDocument.id, sections })
-    } catch {
-      dispatch({ type: 'AI_ERROR', docId: activeDocument.id, error: 'Draft generation failed.' })
+    } catch (err) {
+      const error = err instanceof Error ? err.message : 'Draft generation failed.'
+      dispatch({ type: 'AI_ERROR', docId: activeDocument.id, error })
     }
   }
 
@@ -21,8 +22,9 @@ export function useAI() {
     try {
       const result = await getAIService().reviewDocument(activeDocument, agentName)
       dispatch({ type: 'RUN_REVIEW_SUCCESS', docId: activeDocument.id, ...result })
-    } catch {
-      dispatch({ type: 'AI_ERROR', docId: activeDocument.id, error: 'Review failed.' })
+    } catch (err) {
+      const error = err instanceof Error ? err.message : 'Review failed.'
+      dispatch({ type: 'AI_ERROR', docId: activeDocument.id, error })
     }
   }
 
