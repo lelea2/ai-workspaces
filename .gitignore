@@ -1,6 +1,8 @@
 .env
+.env.example
 .take-home-token
 node_modules/
+dist-server/
 __pycache__/
 .venv/
 .DS_Store
