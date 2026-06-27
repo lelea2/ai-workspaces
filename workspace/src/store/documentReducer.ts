@@ -1,10 +1,9 @@
 import type { AppState, Document, ActivityEvent, Reply } from '../types'
 import type { Action } from './actions'
-import { seedDocuments, INITIAL_ACTIVE_ID } from '../data/seed'
 
 export const initialState: AppState = {
-  documents: seedDocuments,
-  activeDocumentId: INITIAL_ACTIVE_ID,
+  documents: [],
+  activeDocumentId: '',
   isGenerating: false,
   isReviewing: false,
   error: null,
@@ -291,6 +290,9 @@ export function documentReducer(state: AppState, action: Action): AppState {
 
     case 'AI_ERROR':
       return { ...state, isGenerating: false, isReviewing: false, error: action.error }
+
+    case 'LOAD_INITIAL_DATA':
+      return { ...state, documents: action.documents, activeDocumentId: action.activeDocumentId }
 
     default:
       return state

@@ -1,8 +1,8 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useDocument } from '../../hooks/useDocument'
 import { useUI } from '../../store/UIContext'
 import { formatRelativeTime } from '../../utils/time'
-import { TEMPLATES, buildTemplateSections } from '../../data/templates'
+import { dataService } from '../../services/data/dataService'
 import type { DocumentStatus } from '../../types'
 
 const STATUS_COLORS: Record<DocumentStatus, string> = {
@@ -29,6 +29,11 @@ export default function Sidebar() {
   const { sidebarOpen } = useUI()
   const [search, setSearch] = useState('')
   const [templatesOpen, setTemplatesOpen] = useState(true)
+  const [templates, setTemplates] = useState<{ id: string; name: string }[]>([])
+
+  useEffect(() => {
+    dataService.getTemplates().then(setTemplates).catch(() => {})
+  }, [])
 
   if (!sidebarOpen) return null
 
@@ -40,8 +45,8 @@ export default function Sidebar() {
     dispatch({ type: 'CREATE_DOCUMENT', title: 'Untitled Document', sections: [] })
   }
 
-  function handleTemplateClick(templateId: string, templateName: string) {
-    const sections = buildTemplateSections(templateId)
+  async function handleTemplateClick(templateId: string, templateName: string) {
+    const sections = await dataService.buildTemplateSections(templateId)
     dispatch({ type: 'CREATE_DOCUMENT', title: `New ${templateName}`, sections })
   }
 
@@ -131,7 +136,7 @@ export default function Sidebar() {
 
           {templatesOpen && (
             <ul className="space-y-0.5">
-              {TEMPLATES.map((tpl) => (
+              {templates.map((tpl) => (
                 <li key={tpl.id}>
                   <button
                     onClick={() => handleTemplateClick(tpl.id, tpl.name)}

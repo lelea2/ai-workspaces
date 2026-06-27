@@ -475,6 +475,118 @@ originalText MUST be an exact verbatim substring of the section body. Be specifi
 
 ---
 
+## Phase 4 — Server-side Data Layer
+
+**Problem:** All documents, templates, and agent configs are hardcoded in the client bundle (`workspace/src/data/`). The server has no awareness of them — it cannot filter, log, or gate access to content. There is no path to multi-user, persistence, or a real DB without first moving data authority to the server.
+
+**Goal:** Client fetches all data from the server via `/api/data/*`. Server holds an in-memory DB (seeded at startup) as the single source of truth. Client stops importing from `src/data/` entirely.
+
+---
+
+### Step 4.1 — Server in-memory DB (`server/db.ts`)
+
+Single module that initializes at process start and exports typed accessors. All seed data moves here from the client.
+
+**Data housed in `server/db.ts`:**
+```
+documents: Document[]        ← moved from workspace/src/data/seed.ts
+templates: TemplateDef[]     ← moved from workspace/src/data/templates.ts
+agents: AgentConfig[]        ← moved from workspace/src/data/agentPrompts.ts
+```
+
+**Exported interface:**
+```ts
+// Documents
+getDocuments(): Document[]
+getDocument(id: string): Document | undefined
+createDocument(doc: Document): void
+updateDocument(id: string, patch: Partial<Document>): void
+
+// Templates
+getTemplates(): { id: string; name: string }[]
+buildTemplateSections(templateId: string): Section[]
+
+// Agents
+getAgents(): AgentConfig[]
+```
+
+In-memory only for POC — a real DB (Postgres, SQLite) can be swapped in behind this interface without touching any route or client code.
+
+---
+
+### Step 4.2 — Data API routes (`server/routes/data.ts`)
+
+New router mounted at `/api/data` in `server/index.ts`.
+
+```
+GET  /api/data/documents                    → Document[]
+GET  /api/data/documents/:id                → Document
+POST /api/data/documents                    → creates doc, returns Document
+PATCH /api/data/documents/:id               → title / status / version patch
+
+GET  /api/data/templates                    → { id, name }[]
+GET  /api/data/templates/:id/sections       → Section[] (hydrated with fresh IDs)
+
+GET  /api/data/agents                       → AgentConfig[]
+```
+
+Mutation endpoints (PATCH) are the server-side equivalent of `EDIT_SECTION`, `ACCEPT_SUGGESTION`, etc. — not all reducer actions need endpoints in Phase 4; document-level and section-level writes are the priority.
+
+---
+
+### Step 4.3 — Client data service + context migration
+
+**New `workspace/src/services/data/dataService.ts`** — thin fetch wrappers:
+```ts
+export const dataService = {
+  getDocuments(): Promise<Document[]>
+  getTemplates(): Promise<{ id: string; name: string }[]>
+  getAgents(): Promise<AgentConfig[]>
+  buildTemplateSections(templateId: string): Promise<Section[]>
+}
+```
+
+**`DocumentContext.tsx` changes:**
+- On mount, call `dataService.getDocuments()` and `dataService.getAgents()`
+- If the request succeeds and localStorage is empty → populate store with server data
+- If the request fails → fall back to localStorage as before (offline resilience)
+- `loadState()` reads server data first, localStorage second, empty state last
+
+**Remove from client (data now server-owned):**
+- `workspace/src/data/seed.ts` — deleted
+- `workspace/src/data/templates.ts` — deleted (template sections fetched from server)
+- `workspace/src/data/agentPrompts.ts` — deleted (agents fetched from `/api/data/agents`)
+
+**AIPanel + Sidebar** update their template/agent fetch to call `dataService` instead of importing from `src/data/`.
+
+---
+
+### Step 4.4 — Mutation forwarding (write-through to server) ✅ DONE
+
+Every mutation is forwarded to the server as a fire-and-forget diff in `DocumentContext.tsx`. A `syncRef` tracks the previous `documents` array. After every `state.documents` change:
+- Document present in current but not previous → `POST /api/data/documents` (new doc)
+- Document present in both but reference changed → `PATCH /api/data/documents/:id` (full replace, server merges)
+- No action-level interception needed — a single `useEffect` diff covers all mutations regardless of which action triggered them
+
+All mutations covered by this single diff:
+
+| Client action | Effect on state | Server call |
+|---|---|---|
+| `CREATE_DOCUMENT` | new doc in list | `POST /api/data/documents` |
+| `UPDATE_DOCUMENT_TITLE` | doc reference changes | `PATCH /api/data/documents/:id` |
+| `EDIT_SECTION` | doc reference changes | `PATCH /api/data/documents/:id` |
+| `GENERATE_DRAFT_SUCCESS` | doc reference changes | `PATCH /api/data/documents/:id` |
+| `RUN_REVIEW_SUCCESS` | doc reference changes | `PATCH /api/data/documents/:id` |
+| `ACCEPT_SUGGESTION` / `REJECT_SUGGESTION` | doc reference changes | `PATCH /api/data/documents/:id` |
+
+**Baseline protection:** `LOAD_INITIAL_DATA` (server fetch on fresh start) pre-sets `syncRef.prev` before dispatching, so the sync effect sees no diff and does not re-POST seed documents.
+
+Mutations are fire-and-forget (errors logged, client state unaffected). localStorage remains the offline cache.
+
+**Phase 4 exit criteria:** ✅ `workspace/src/data/` directory is empty. Client bundle contains zero hardcoded documents, templates, or agents. Every agent action flows through the server and the in-memory DB reflects the current document state.
+
+---
+
 ## Seed Data Plan
 
 Pre-populate 4 documents so the app looks like a real workspace on first load:

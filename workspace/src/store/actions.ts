@@ -1,4 +1,4 @@
-import type { Section, Comment, Suggestion } from '../types'
+import type { Section, Comment, Suggestion, Document } from '../types'
 
 export type Action =
   | { type: 'SET_ACTIVE_DOCUMENT'; id: string }
@@ -15,3 +15,4 @@ export type Action =
   | { type: 'ADD_COMMENT'; docId: string; sectionId: string; text: string }
   | { type: 'REPLY_TO_COMMENT'; docId: string; commentId: string; text: string }
   | { type: 'AI_ERROR'; docId: string; error: string }
+  | { type: 'LOAD_INITIAL_DATA'; documents: Document[]; activeDocumentId: string }

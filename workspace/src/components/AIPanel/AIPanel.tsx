@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react'
-import { AGENTS } from '../../data/agentPrompts'
 import { useDocument } from '../../hooks/useDocument'
+import { dataService } from '../../services/data/dataService'
+import type { AgentConfig } from '../../types'
 import { useAI } from '../../hooks/useAI'
 import { useUI } from '../../store/UIContext'
 import { formatRelativeTime } from '../../utils/time'
@@ -303,13 +304,25 @@ export default function AIPanel() {
   const { generateDraft, runReview } = useAI()
   const { panelOpen } = useUI()
 
-  if (!panelOpen) return null
-
+  const [agents, setAgents] = useState<AgentConfig[]>([])
   const [activeAgentId, setActiveAgentId] = useState('reviewer')
-  const [prompt, setPrompt] = useState(AGENTS.find((a) => a.id === 'reviewer')!.prompt)
+  const [prompt, setPrompt] = useState('')
   const [activeTab, setActiveTab] = useState<'suggestions' | 'comments'>('suggestions')
 
-  const activeAgent = AGENTS.find((a) => a.id === activeAgentId)!
+  useEffect(() => {
+    dataService.getAgents().then((list) => {
+      setAgents(list)
+      const defaultAgent = list.find((a) => a.id === 'reviewer') ?? list[0]
+      if (defaultAgent) {
+        setActiveAgentId(defaultAgent.id)
+        setPrompt(defaultAgent.prompt)
+      }
+    }).catch(() => {})
+  }, [])
+
+  if (!panelOpen) return null
+
+  const activeAgent = agents.find((a) => a.id === activeAgentId)
   const isLoading = isGenerating || isReviewing
 
   const suggestions: Suggestion[] = activeDocument?.suggestions ?? []
@@ -317,14 +330,14 @@ export default function AIPanel() {
   const pendingCount = suggestions.filter((s) => s.status === 'pending').length
 
   function handleAgentSelect(agentId: string) {
-    const agent = AGENTS.find((a) => a.id === agentId)
+    const agent = agents.find((a) => a.id === agentId)
     if (!agent) return
     setActiveAgentId(agentId)
     setPrompt(agent.prompt)
   }
 
   function handleSubmit() {
-    if (!activeDocument || isLoading || !prompt.trim()) return
+    if (!activeDocument || isLoading || !prompt.trim() || !activeAgent) return
     if (activeAgent.type === 'draft') {
       generateDraft(prompt)
     } else {
@@ -349,7 +362,7 @@ export default function AIPanel() {
     dispatch({ type: 'REJECT_SUGGESTION', docId: activeDocument.id, suggestionId: suggestion.id })
   }
 
-  const canSubmit = !!activeDocument && !isLoading && !!prompt.trim()
+  const canSubmit = !!activeDocument && !isLoading && !!prompt.trim() && !!activeAgent
 
   return (
     <aside className="w-90 shrink-0 flex flex-col bg-white overflow-hidden">
@@ -361,7 +374,7 @@ export default function AIPanel() {
         <div className="mb-3">
           <p className="text-xs text-gray-500 mb-2">Select an agent</p>
           <div className="flex flex-wrap gap-1.5">
-            {AGENTS.map((agent) => {
+            {agents.map((agent) => {
               const isActive = activeAgentId === agent.id
               return (
                 <button
@@ -387,7 +400,7 @@ export default function AIPanel() {
 
         {/* Prompt box */}
         <div className="relative">
-          <p className="text-xs text-gray-500 mb-1.5">Ask the {activeAgent.name}</p>
+          <p className="text-xs text-gray-500 mb-1.5">Ask the {activeAgent?.name ?? 'AI Agent'}</p>
           <div className="relative">
             <textarea
               value={prompt}

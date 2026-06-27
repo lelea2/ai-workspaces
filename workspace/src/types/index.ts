@@ -63,6 +63,17 @@ export type Document = {
   updatedAt: string
 }
 
+export type AgentConfig = {
+  id: string
+  name: string
+  color: string
+  textColor: string
+  bgLight: string
+  initial: string
+  prompt: string
+  type: 'draft' | 'review'
+}
+
 export type AppState = {
   documents: Document[]
   activeDocumentId: string

@@ -12,3 +12,219 @@
 [ 3756032ms] [LOG] [vite] server connection lost. Polling for restart... @ http://localhost:5174/@vite/client:992
 [ 4315724ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=43933a06:14335
 [ 4373858ms] [LOG] [vite] server connection lost. Polling for restart... @ http://localhost:5174/@vite/client:992
+[20686699ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=43933a06:14335
+[21433918ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=43933a06:14335
+[21434910ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=43933a06:14335
+[21438702ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=43933a06:14335
+[21481905ms] ReferenceError: TEMPLATES is not defined
+    at Sidebar (http://localhost:5174/src/components/Sidebar/Sidebar.tsx?t=1782536647351:314:17)
+    at Object.react_stack_bottom_frame (http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=43933a06:12866:12)
+    at renderWithHooks (http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=43933a06:4213:19)
+    at updateFunctionComponent (http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=43933a06:5569:16)
+    at beginWork (http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=43933a06:6140:20)
+    at runWithFiberInDEV (http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=43933a06:851:66)
+    at performUnitOfWork (http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=43933a06:8429:92)
+    at workLoopSync (http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=43933a06:8325:37)
+    at renderRootSync (http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=43933a06:8309:6)
+    at performWorkOnRoot (http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=43933a06:7994:27)
+[21481902ms] [WARNING] %s
+
+%s
+ An error occurred in the <Sidebar> component. Consider adding an error boundary to your tree to customize error handling behavior.
+Visit https://react.dev/link/error-boundaries to learn more about error boundaries. @ http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=43933a06:5257
+[21489178ms] ReferenceError: TEMPLATES is not defined
+    at Sidebar (http://localhost:5174/src/components/Sidebar/Sidebar.tsx?t=1782536654598:318:17)
+    at Object.react_stack_bottom_frame (http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=43933a06:12866:12)
+    at renderWithHooks (http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=43933a06:4213:19)
+    at updateFunctionComponent (http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=43933a06:5569:16)
+    at beginWork (http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=43933a06:6140:20)
+    at runWithFiberInDEV (http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=43933a06:851:66)
+    at performUnitOfWork (http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=43933a06:8429:92)
+    at workLoopSync (http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=43933a06:8325:37)
+    at renderRootSync (http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=43933a06:8309:6)
+    at performWorkOnRoot (http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=43933a06:7994:27)
+[21489139ms] [WARNING] %s
+
+%s
+ An error occurred in the <Sidebar> component. Consider adding an error boundary to your tree to customize error handling behavior.
+Visit https://react.dev/link/error-boundaries to learn more about error boundaries. @ http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=43933a06:5257
+[21494566ms] ReferenceError: TEMPLATES is not defined
+    at Sidebar (http://localhost:5174/src/components/Sidebar/Sidebar.tsx?t=1782536654598:318:17)
+    at Object.react_stack_bottom_frame (http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=43933a06:12866:12)
+    at renderWithHooks (http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=43933a06:4213:19)
+    at updateFunctionComponent (http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=43933a06:5569:16)
+    at beginWork (http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=43933a06:6140:20)
+    at runWithFiberInDEV (http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=43933a06:851:66)
+    at performUnitOfWork (http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=43933a06:8429:92)
+    at workLoopSync (http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=43933a06:8325:37)
+    at renderRootSync (http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=43933a06:8309:6)
+    at performWorkOnRoot (http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=43933a06:7994:27)
+[21494566ms] [WARNING] %s
+
+%s
+ An error occurred in the <Sidebar> component. Consider adding an error boundary to your tree to customize error handling behavior.
+Visit https://react.dev/link/error-boundaries to learn more about error boundaries. @ http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=43933a06:5257
+[21506159ms] ReferenceError: TEMPLATES is not defined
+    at Sidebar (http://localhost:5174/src/components/Sidebar/Sidebar.tsx?t=1782536654598:318:17)
+    at Object.react_stack_bottom_frame (http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=43933a06:12866:12)
+    at renderWithHooks (http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=43933a06:4213:19)
+    at updateFunctionComponent (http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=43933a06:5569:16)
+    at beginWork (http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=43933a06:6140:20)
+    at runWithFiberInDEV (http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=43933a06:851:66)
+    at performUnitOfWork (http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=43933a06:8429:92)
+    at workLoopSync (http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=43933a06:8325:37)
+    at renderRootSync (http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=43933a06:8309:6)
+    at performWorkOnRoot (http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=43933a06:7994:27)
+[21506157ms] [WARNING] %s
+
+%s
+ An error occurred in the <Sidebar> component. Consider adding an error boundary to your tree to customize error handling behavior.
+Visit https://react.dev/link/error-boundaries to learn more about error boundaries. @ http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=43933a06:5257
+[21511980ms] ReferenceError: TEMPLATES is not defined
+    at Sidebar (http://localhost:5174/src/components/Sidebar/Sidebar.tsx?t=1782536654598:318:17)
+    at Object.react_stack_bottom_frame (http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=43933a06:12866:12)
+    at renderWithHooks (http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=43933a06:4213:19)
+    at updateFunctionComponent (http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=43933a06:5569:16)
+    at beginWork (http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=43933a06:6140:20)
+    at runWithFiberInDEV (http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=43933a06:851:66)
+    at performUnitOfWork (http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=43933a06:8429:92)
+    at workLoopSync (http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=43933a06:8325:37)
+    at renderRootSync (http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=43933a06:8309:6)
+    at performWorkOnRoot (http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=43933a06:7994:27)
+[21511967ms] [WARNING] %s
+
+%s
+ An error occurred in the <Sidebar> component. Consider adding an error boundary to your tree to customize error handling behavior.
+Visit https://react.dev/link/error-boundaries to learn more about error boundaries. @ http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=43933a06:5257
+[21515679ms] ReferenceError: TEMPLATES is not defined
+    at Sidebar (http://localhost:5174/src/components/Sidebar/Sidebar.tsx?t=1782536654598:318:17)
+    at Object.react_stack_bottom_frame (http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=43933a06:12866:12)
+    at renderWithHooks (http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=43933a06:4213:19)
+    at updateFunctionComponent (http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=43933a06:5569:16)
+    at beginWork (http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=43933a06:6140:20)
+    at runWithFiberInDEV (http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=43933a06:851:66)
+    at performUnitOfWork (http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=43933a06:8429:92)
+    at workLoopSync (http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=43933a06:8325:37)
+    at renderRootSync (http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=43933a06:8309:6)
+    at performWorkOnRoot (http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=43933a06:7994:27)
+[21515679ms] [WARNING] %s
+
+%s
+ An error occurred in the <Sidebar> component. Consider adding an error boundary to your tree to customize error handling behavior.
+Visit https://react.dev/link/error-boundaries to learn more about error boundaries. @ http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=43933a06:5257
+[21519996ms] ReferenceError: TEMPLATES is not defined
+    at Sidebar (http://localhost:5174/src/components/Sidebar/Sidebar.tsx?t=1782536654598:318:17)
+    at Object.react_stack_bottom_frame (http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=43933a06:12866:12)
+    at renderWithHooks (http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=43933a06:4213:19)
+    at updateFunctionComponent (http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=43933a06:5569:16)
+    at beginWork (http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=43933a06:6140:20)
+    at runWithFiberInDEV (http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=43933a06:851:66)
+    at performUnitOfWork (http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=43933a06:8429:92)
+    at workLoopSync (http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=43933a06:8325:37)
+    at renderRootSync (http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=43933a06:8309:6)
+    at performWorkOnRoot (http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=43933a06:7994:27)
+[21519996ms] [WARNING] %s
+
+%s
+ An error occurred in the <Sidebar> component. Consider adding an error boundary to your tree to customize error handling behavior.
+Visit https://react.dev/link/error-boundaries to learn more about error boundaries. @ http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=43933a06:5257
+[21525650ms] ReferenceError: TEMPLATES is not defined
+    at Sidebar (http://localhost:5174/src/components/Sidebar/Sidebar.tsx?t=1782536654598:318:17)
+    at Object.react_stack_bottom_frame (http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=43933a06:12866:12)
+    at renderWithHooks (http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=43933a06:4213:19)
+    at updateFunctionComponent (http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=43933a06:5569:16)
+    at beginWork (http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=43933a06:6140:20)
+    at runWithFiberInDEV (http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=43933a06:851:66)
+    at performUnitOfWork (http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=43933a06:8429:92)
+    at workLoopSync (http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=43933a06:8325:37)
+    at renderRootSync (http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=43933a06:8309:6)
+    at performWorkOnRoot (http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=43933a06:7994:27)
+[21525650ms] [WARNING] %s
+
+%s
+ An error occurred in the <Sidebar> component. Consider adding an error boundary to your tree to customize error handling behavior.
+Visit https://react.dev/link/error-boundaries to learn more about error boundaries. @ http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=43933a06:5257
+[21531378ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=43933a06:14335
+[21531394ms] ReferenceError: TEMPLATES is not defined
+    at Sidebar (http://localhost:5174/src/components/Sidebar/Sidebar.tsx?t=1782536654598:318:17)
+    at Object.react_stack_bottom_frame (http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=43933a06:12866:12)
+    at renderWithHooks (http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=43933a06:4213:19)
+    at updateFunctionComponent (http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=43933a06:5569:16)
+    at beginWork (http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=43933a06:6140:20)
+    at runWithFiberInDEV (http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=43933a06:851:66)
+    at performUnitOfWork (http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=43933a06:8429:92)
+    at workLoopSync (http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=43933a06:8325:37)
+    at renderRootSync (http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=43933a06:8309:6)
+    at performWorkOnRoot (http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=43933a06:7994:27)
+[21531394ms] [WARNING] %s
+
+%s
+ An error occurred in the <Sidebar> component. Consider adding an error boundary to your tree to customize error handling behavior.
+Visit https://react.dev/link/error-boundaries to learn more about error boundaries. @ http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=43933a06:5257
+[21794069ms] ReferenceError: TEMPLATES is not defined
+    at Sidebar (http://localhost:5174/src/components/Sidebar/Sidebar.tsx?t=1782536959443:318:17)
+    at Object.react_stack_bottom_frame (http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=43933a06:12866:12)
+    at renderWithHooks (http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=43933a06:4213:19)
+    at updateFunctionComponent (http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=43933a06:5569:16)
+    at beginWork (http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=43933a06:6140:20)
+    at runWithFiberInDEV (http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=43933a06:851:66)
+    at performUnitOfWork (http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=43933a06:8429:92)
+    at workLoopSync (http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=43933a06:8325:37)
+    at renderRootSync (http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=43933a06:8309:6)
+    at performWorkOnRoot (http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=43933a06:7994:27)
+[21794068ms] [WARNING] %s
+
+%s
+ An error occurred in the <Sidebar> component. Consider adding an error boundary to your tree to customize error handling behavior.
+Visit https://react.dev/link/error-boundaries to learn more about error boundaries. @ http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=43933a06:5257
+[21805016ms] ReferenceError: TEMPLATES is not defined
+    at Sidebar (http://localhost:5174/src/components/Sidebar/Sidebar.tsx?t=1782536970444:318:17)
+    at Object.react_stack_bottom_frame (http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=43933a06:12866:12)
+    at renderWithHooks (http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=43933a06:4213:19)
+    at updateFunctionComponent (http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=43933a06:5569:16)
+    at beginWork (http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=43933a06:6140:20)
+    at runWithFiberInDEV (http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=43933a06:851:66)
+    at performUnitOfWork (http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=43933a06:8429:92)
+    at workLoopSync (http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=43933a06:8325:37)
+    at renderRootSync (http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=43933a06:8309:6)
+    at performWorkOnRoot (http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=43933a06:7994:27)
+[21805016ms] [WARNING] %s
+
+%s
+ An error occurred in the <Sidebar> component. Consider adding an error boundary to your tree to customize error handling behavior.
+Visit https://react.dev/link/error-boundaries to learn more about error boundaries. @ http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=43933a06:5257
+[21813900ms] ReferenceError: TEMPLATES is not defined
+    at Sidebar (http://localhost:5174/src/components/Sidebar/Sidebar.tsx?t=1782536979333:318:17)
+    at Object.react_stack_bottom_frame (http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=43933a06:12866:12)
+    at renderWithHooks (http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=43933a06:4213:19)
+    at updateFunctionComponent (http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=43933a06:5569:16)
+    at beginWork (http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=43933a06:6140:20)
+    at runWithFiberInDEV (http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=43933a06:851:66)
+    at performUnitOfWork (http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=43933a06:8429:92)
+    at workLoopSync (http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=43933a06:8325:37)
+    at renderRootSync (http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=43933a06:8309:6)
+    at performWorkOnRoot (http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=43933a06:7994:27)
+[21813900ms] [WARNING] %s
+
+%s
+ An error occurred in the <Sidebar> component. Consider adding an error boundary to your tree to customize error handling behavior.
+Visit https://react.dev/link/error-boundaries to learn more about error boundaries. @ http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=43933a06:5257
+[21909044ms] [LOG] [vite] server connection lost. Polling for restart... @ http://localhost:5174/@vite/client:992
+[21912380ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=43933a06:14335
+[21912399ms] ReferenceError: TEMPLATES is not defined
+    at Sidebar (http://localhost:5174/src/components/Sidebar/Sidebar.tsx:318:17)
+    at Object.react_stack_bottom_frame (http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=43933a06:12866:12)
+    at renderWithHooks (http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=43933a06:4213:19)
+    at updateFunctionComponent (http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=43933a06:5569:16)
+    at beginWork (http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=43933a06:6140:20)
+    at runWithFiberInDEV (http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=43933a06:851:66)
+    at performUnitOfWork (http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=43933a06:8429:92)
+    at workLoopSync (http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=43933a06:8325:37)
+    at renderRootSync (http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=43933a06:8309:6)
+    at performWorkOnRoot (http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=43933a06:7994:27)
+[21912393ms] [WARNING] %s
+
+%s
+ An error occurred in the <Sidebar> component. Consider adding an error boundary to your tree to customize error handling behavior.
+Visit https://react.dev/link/error-boundaries to learn more about error boundaries. @ http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=43933a06:5257
+[22232438ms] [LOG] [vite] server connection lost. Polling for restart... @ http://localhost:5174/@vite/client:992

@@ -3,6 +3,7 @@ import express from 'express'
 import path from 'path'
 import { fileURLToPath } from 'url'
 import { aiRouter } from './routes/ai.js'
+import { dataRouter } from './routes/data.js'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const PORT = Number(process.env.PORT ?? 3001)
@@ -10,6 +11,7 @@ const PORT = Number(process.env.PORT ?? 3001)
 const app = express()
 app.use(express.json())
 app.use('/api/ai', aiRouter)
+app.use('/api/data', dataRouter)
 
 // Serve built Vite app in production
 if (process.env.NODE_ENV === 'production') {
