@@ -55,7 +55,7 @@ export type ActivityEvent = {
   actorColor: string
   actorInitial: string
   action: string
-  type: 'created' | 'drafted' | 'reviewed' | 'edited' | 'accepted' | 'rejected' | 'resolved' | 'commented' | 'replied'
+  type: 'created' | 'drafted' | 'reviewed' | 'edited' | 'accepted' | 'rejected' | 'resolved' | 'commented' | 'replied' | 'published'
   createdAt: string
 }
 
@@ -632,6 +632,10 @@ export function updateDocument(id: string, patch: Partial<Document>): boolean {
   if (!existing) return false
   documents.set(id, { ...existing, ...patch, id })
   return true
+}
+
+export function deleteDocument(id: string): boolean {
+  return documents.delete(id)
 }
 
 // ── Template accessors ────────────────────────────────────────────────────────

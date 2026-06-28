@@ -47,7 +47,7 @@ export type ActivityEvent = {
   actorColor: string
   actorInitial: string
   action: string
-  type: 'created' | 'drafted' | 'reviewed' | 'edited' | 'accepted' | 'rejected' | 'resolved' | 'commented' | 'replied'
+  type: 'created' | 'drafted' | 'reviewed' | 'edited' | 'accepted' | 'rejected' | 'resolved' | 'commented' | 'replied' | 'published'
   createdAt: string
 }
 

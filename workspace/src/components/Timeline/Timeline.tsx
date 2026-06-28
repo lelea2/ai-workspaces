@@ -51,6 +51,11 @@ const TYPE_ICON: Record<ActivityEvent['type'], React.ReactNode> = {
       <path d="M2 3.5L4.5 1v2C7.5 3 9 4.5 9 7c-.8-1.5-2-2-4.5-2v2L2 4.5l-.5-.5L2 3.5z" stroke="currentColor" strokeWidth="1.2" strokeLinejoin="round" />
     </svg>
   ),
+  published: (
+    <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
+      <path d="M5 1v5M3 3.5L5 1l2 2.5M2 7.5h6a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5H2a.5.5 0 0 1-.5-.5V8a.5.5 0 0 1 .5-.5z" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  ),
 }
 
 function EventNode({ event }: { event: ActivityEvent }) {
@@ -86,7 +91,8 @@ export default function Timeline() {
   const [showAll, setShowAll] = useState(false)
 
   const events = activeDocument?.events ?? []
-  const visible = showAll ? events : events.slice(0, 6)
+  const deduped = Array.from(new Map(events.map((e) => [e.id, e])).values())
+  const visible = showAll ? deduped : deduped.slice(0, 6)
 
   return (
     <div className="h-16 bg-white border-t border-gray-200 flex items-center px-4 gap-4 shrink-0">

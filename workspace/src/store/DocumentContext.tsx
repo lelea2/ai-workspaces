@@ -100,6 +100,15 @@ export function DocumentProvider({ children }: { children: ReactNode }) {
     const prev = syncRef.current.prev
     syncRef.current.prev = state.documents
 
+    const currIds = new Set(state.documents.map((d) => d.id))
+    for (const prevDoc of prev) {
+      if (!currIds.has(prevDoc.id)) {
+        dataService.deleteDocument(prevDoc.id).catch((err) =>
+          console.error(`[data] DELETE /documents/${prevDoc.id} failed: ${err instanceof Error ? err.message : err}`)
+        )
+      }
+    }
+
     for (const doc of state.documents) {
       const prevDoc = prev.find((d) => d.id === doc.id)
       if (!prevDoc) {

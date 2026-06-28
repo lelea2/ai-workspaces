@@ -6,6 +6,7 @@ async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
     const body = await res.json().catch(() => ({ error: res.statusText })) as { error?: string }
     throw new Error(body.error ?? `Request failed: ${res.status}`)
   }
+  if (res.status === 204) return undefined as T
   return res.json() as Promise<T>
 }
 
@@ -32,6 +33,10 @@ export const dataService = {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(patch),
     })
+  },
+
+  deleteDocument(id: string): Promise<void> {
+    return apiFetch(`/api/data/documents/${id}`, { method: 'DELETE' })
   },
 
   getTemplates(): Promise<{ id: string; name: string }[]> {

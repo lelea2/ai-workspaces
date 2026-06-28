@@ -4,6 +4,7 @@ import {
   getDocument,
   createDocument,
   updateDocument,
+  deleteDocument,
   getTemplates,
   buildTemplateSections,
   getAgents,
@@ -64,6 +65,16 @@ dataRouter.patch('/documents/:id', (req, res) => {
   }
   console.log(`[data] updated document id=${id}`)
   res.json(getDocument(id))
+})
+
+dataRouter.delete('/documents/:id', (req, res) => {
+  const ok = deleteDocument(req.params.id)
+  if (!ok) {
+    res.status(404).json({ error: `Document '${req.params.id}' not found` })
+    return
+  }
+  console.log(`[data] deleted document id=${req.params.id}`)
+  res.status(204).send()
 })
 
 // ── Templates ─────────────────────────────────────────────────────────────────

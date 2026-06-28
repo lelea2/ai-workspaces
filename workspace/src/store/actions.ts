@@ -15,4 +15,6 @@ export type Action =
   | { type: 'ADD_COMMENT'; docId: string; sectionId: string; text: string }
   | { type: 'REPLY_TO_COMMENT'; docId: string; commentId: string; text: string }
   | { type: 'AI_ERROR'; docId: string; error: string }
+  | { type: 'PUBLISH_DOCUMENT'; docId: string }
+  | { type: 'DELETE_DOCUMENT'; docId: string }
   | { type: 'LOAD_INITIAL_DATA'; documents: Document[]; activeDocumentId: string }

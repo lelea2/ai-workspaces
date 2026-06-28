@@ -10,8 +10,9 @@ export const initialState: AppState = {
   error: null,
 }
 
+let _evtSeq = 0
 function makeEvent(partial: Omit<ActivityEvent, 'id' | 'createdAt'>): ActivityEvent {
-  return { ...partial, id: `event-${Date.now()}`, createdAt: new Date().toISOString() }
+  return { ...partial, id: `event-${Date.now()}-${++_evtSeq}`, createdAt: new Date().toISOString() }
 }
 
 function updateDoc(
@@ -291,6 +292,33 @@ export function documentReducer(state: AppState, action: Action): AppState {
 
     case 'AI_ERROR':
       return { ...state, isGenerating: false, isReviewing: false, error: action.error }
+
+    case 'PUBLISH_DOCUMENT':
+      return updateDoc(state, action.docId, (doc) => ({
+        ...doc,
+        status: 'reviewing',
+        updatedAt: new Date().toISOString(),
+        events: [
+          makeEvent({
+            actor: 'Khanh',
+            actorType: 'human',
+            actorColor: '#6366f1',
+            actorInitial: 'K',
+            action: 'Published document',
+            type: 'published',
+          }),
+          ...doc.events,
+        ],
+      }))
+
+    case 'DELETE_DOCUMENT': {
+      const remaining = state.documents.filter((d) => d.id !== action.docId)
+      const activeDocumentId =
+        state.activeDocumentId === action.docId
+          ? (remaining[0]?.id ?? '')
+          : state.activeDocumentId
+      return { ...state, documents: remaining, activeDocumentId }
+    }
 
     case 'LOAD_INITIAL_DATA':
       return { ...state, documents: action.documents, activeDocumentId: action.activeDocumentId }

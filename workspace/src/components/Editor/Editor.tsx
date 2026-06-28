@@ -365,6 +365,12 @@ function NoSectionsState() {
 
 export default function Editor() {
   const { activeDocument, isGenerating, dispatch } = useDocument()
+  const [titleDraft, setTitleDraft] = useState('')
+
+  // Sync draft when switching to a different document
+  useEffect(() => {
+    setTitleDraft(activeDocument?.title ?? '')
+  }, [activeDocument?.id])
 
   if (!activeDocument) {
     return (
@@ -392,9 +398,46 @@ export default function Editor() {
       {/* Document content */}
       <div className="flex-1 overflow-y-auto">
         <div className="max-w-3xl mx-auto px-8 py-6">
-          <h1 className={`text-2xl font-bold text-gray-900 mb-6 ${isGenerating ? 'opacity-30' : ''}`}>
-            {activeDocument.title}
-          </h1>
+          <input
+            type="text"
+            value={titleDraft}
+            onChange={(e) => setTitleDraft(e.target.value)}
+            onBlur={() => {
+              const t = titleDraft.trim()
+              if (!t) { setTitleDraft(activeDocument.title); return }
+              if (t !== activeDocument.title) {
+                dispatch({ type: 'UPDATE_DOCUMENT_TITLE', docId: activeDocument.id, title: t })
+              }
+            }}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') e.currentTarget.blur()
+              if (e.key === 'Escape') { setTitleDraft(activeDocument.title); e.currentTarget.blur() }
+            }}
+            disabled={isGenerating}
+            placeholder="Untitled Document"
+            className={`text-2xl font-bold text-gray-900 mb-3 w-full bg-transparent outline-none rounded-md hover:bg-gray-50 focus:bg-gray-50 px-2 py-1 -ml-2 transition-colors placeholder-gray-300 ${isGenerating ? 'opacity-30 pointer-events-none' : 'cursor-text'}`}
+          />
+
+          {/* Draft visibility banner */}
+          {activeDocument.status === 'draft' && !isGenerating && (
+            <div className="flex items-center justify-between mb-5 px-3 py-2 rounded-lg bg-amber-50 border border-amber-200">
+              <div className="flex items-center gap-2 text-amber-700">
+                <svg width="14" height="14" viewBox="0 0 14 14" fill="none" className="shrink-0">
+                  <path d="M7 2a3 3 0 0 0-3 3v1H3a1 1 0 0 0-1 1v4a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1V7a1 1 0 0 0-1-1h-1V5a3 3 0 0 0-3-3zm-1.5 4V5a1.5 1.5 0 0 1 3 0v1h-3z" fill="currentColor" opacity=".7" />
+                </svg>
+                <span className="text-xs font-medium">Draft — only you and AI agents can see this</span>
+              </div>
+              <button
+                onClick={() => dispatch({ type: 'PUBLISH_DOCUMENT', docId: activeDocument.id })}
+                className="flex items-center gap-1.5 px-3 py-1 text-xs font-semibold text-white bg-amber-600 hover:bg-amber-700 rounded-md transition-colors shrink-0 ml-3"
+              >
+                Publish
+                <svg width="11" height="11" viewBox="0 0 11 11" fill="none">
+                  <path d="M5.5 1v6M3 3.5L5.5 1 8 3.5M2 8.5h7" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              </button>
+            </div>
+          )}
 
           {isGenerating ? (
             <GeneratingSkeleton />
@@ -424,13 +467,22 @@ export default function Editor() {
       {/* Footer */}
       <div className="flex items-center justify-between px-6 py-2 border-t border-gray-100 bg-gray-50/50 shrink-0">
         <span className="text-xs text-gray-400">{wordCount} words</span>
-        <span className="text-xs text-gray-400 flex items-center gap-1.5">
-          <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-            <circle cx="6" cy="6" r="4.5" stroke="currentColor" strokeWidth="1.2" />
-            <path d="M4 6h4M6 4v4" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
-          </svg>
-          Everyone can edit
-        </span>
+        {activeDocument.status === 'draft' ? (
+          <span className="text-xs text-amber-500 flex items-center gap-1">
+            <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
+              <path d="M2 8.5l1-1 5-5 1 1-5 5-1.5.5L2 8.5z" stroke="currentColor" strokeWidth="1.1" strokeLinejoin="round" />
+            </svg>
+            Auto-saved as draft
+          </span>
+        ) : (
+          <span className="text-xs text-gray-400 flex items-center gap-1.5">
+            <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+              <circle cx="6" cy="6" r="4.5" stroke="currentColor" strokeWidth="1.2" />
+              <path d="M4 6h4M6 4v4" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
+            </svg>
+            Everyone can edit
+          </span>
+        )}
       </div>
     </main>
   )
