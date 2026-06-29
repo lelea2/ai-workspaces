@@ -1,6 +1,6 @@
 import type { AppState, Document, ActivityEvent, Reply } from '../types'
 import type { Action } from './actions'
-import { lexicalReplaceText } from '../utils/lexical'
+import { lexicalReplaceText, isLexicalJson, plainTextToLexicalJson } from '../utils/lexical'
 
 export const initialState: AppState = {
   documents: [],
@@ -153,7 +153,17 @@ export function documentReducer(state: AppState, action: Action): AppState {
 
         const updatedSections = doc.sections.map((section) => {
           if (section.id !== suggestion.sectionId) return section
-          return { ...section, body: lexicalReplaceText(section.body, suggestion.originalText, suggestion.suggestedText) }
+          let newBody: string
+          if (action.aiBody !== undefined) {
+            // AI-rewritten body arrives as plain text; wrap in Lexical JSON if the
+            // section was already in Lexical format so the editor can parse it.
+            newBody = isLexicalJson(section.body)
+              ? plainTextToLexicalJson(action.aiBody)
+              : action.aiBody
+          } else {
+            newBody = lexicalReplaceText(section.body, suggestion.originalText, suggestion.suggestedText)
+          }
+          return { ...section, body: newBody }
         })
 
         const updatedDoc: Document = {

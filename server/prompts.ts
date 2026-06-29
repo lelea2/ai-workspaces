@@ -59,6 +59,13 @@ Requirements:
 - Include 4–6 sections appropriate for the document type requested.`
 }
 
+export function getApplySuggestionSystemPrompt(): string {
+  return `You are a document editor polishing a section that has already had an edit applied to it.
+The edit has been inserted into the text for you. Your only job is to smooth any awkward phrasing or transitions that resulted from the insertion, while preserving every word of the added content.
+Do NOT remove, revert, or summarize any of the new content.
+Return ONLY the polished section body — no explanation, no preamble, no markdown code fences.`
+}
+
 export function getReviewSystemPrompt(agentName: string): string {
   const persona =
     REVIEW_PERSONAS[agentName] ??

@@ -1,5 +1,6 @@
 import { getAIService } from '../services/ai'
 import { useDocument } from './useDocument'
+import type { Suggestion } from '../types'
 
 export function useAI() {
   const { activeDocument, dispatch } = useDocument()
@@ -28,5 +29,32 @@ export function useAI() {
     }
   }
 
-  return { generateDraft, runReview }
+  // Stream the AI rewrite, return the resulting body — does NOT dispatch.
+  // Call applyAcceptedSuggestion after user approves the diff.
+  async function acceptSuggestion(
+    suggestion: Suggestion,
+    onChunk?: (chunk: string) => void,
+  ): Promise<string | undefined> {
+    if (!activeDocument) return undefined
+    const section = activeDocument.sections.find((s) => s.id === suggestion.sectionId)
+    if (!section) return undefined
+    try {
+      const result = await getAIService().applySuggestion(
+        section,
+        suggestion,
+        onChunk ?? (() => {}),
+      )
+      return result.body || undefined
+    } catch {
+      return undefined
+    }
+  }
+
+  // Apply an already-approved AI body to the document (dispatches ACCEPT_SUGGESTION).
+  function applyAcceptedSuggestion(suggestion: Suggestion, aiBody?: string) {
+    if (!activeDocument) return
+    dispatch({ type: 'ACCEPT_SUGGESTION', docId: activeDocument.id, suggestionId: suggestion.id, aiBody })
+  }
+
+  return { generateDraft, runReview, acceptSuggestion, applyAcceptedSuggestion }
 }

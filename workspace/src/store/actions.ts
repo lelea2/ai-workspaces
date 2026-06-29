@@ -9,7 +9,7 @@ export type Action =
   | { type: 'GENERATE_DRAFT_SUCCESS'; docId: string; sections: Section[] }
   | { type: 'RUN_REVIEW_START'; docId: string }
   | { type: 'RUN_REVIEW_SUCCESS'; docId: string; comments: Comment[]; suggestions: Suggestion[] }
-  | { type: 'ACCEPT_SUGGESTION'; docId: string; suggestionId: string }
+  | { type: 'ACCEPT_SUGGESTION'; docId: string; suggestionId: string; aiBody?: string }
   | { type: 'REJECT_SUGGESTION'; docId: string; suggestionId: string }
   | { type: 'RESOLVE_COMMENT'; docId: string; commentId: string }
   | { type: 'ADD_COMMENT'; docId: string; sectionId: string; text: string }

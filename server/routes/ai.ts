@@ -1,7 +1,7 @@
 import { Router } from 'express'
 import { openai } from '../openai.js'
-import { getDraftSystemPrompt, getReviewSystemPrompt } from '../prompts.js'
-import { mockDraft, mockReview } from '../mock.js'
+import { getDraftSystemPrompt, getReviewSystemPrompt, getApplySuggestionSystemPrompt } from '../prompts.js'
+import { mockDraft, mockReview, mockApplySuggestion } from '../mock.js'
 import { extractPlainText } from '../lexical.js'
 
 const USE_MOCK = process.env.MOCK_AI === 'true'
@@ -40,6 +40,119 @@ function stripFences(raw: string): string {
 }
 
 export const aiRouter = Router()
+
+// ── POST /api/ai/apply-suggestion ────────────────────────────────────────────
+// Accepts a suggestion by calling AI to rewrite the section body, then returns
+// the new body as plain text. The client applies it to its local state; mutation
+// sync (PATCH /documents/:id) keeps the server DB up-to-date after dispatch.
+
+type ApplySuggestionPayload = {
+  section: { id: string; heading: string; body: string }
+  suggestion: { id: string; sectionId: string; originalText: string; suggestedText: string; reason: string }
+}
+
+aiRouter.post('/apply-suggestion', async (req, res) => {
+  const { section, suggestion } = req.body as Partial<ApplySuggestionPayload>
+  if (!section?.id || !suggestion?.originalText) {
+    res.status(400).json({ error: 'section and suggestion are required' })
+    return
+  }
+
+  const plainBody = extractPlainText(section.body ?? '')
+  const provider = USE_MOCK ? 'mock' : 'openai'
+  console.log(`[ai] provider=${provider}  op=apply-suggestion  section="${section.heading}"`)
+
+  // SSE headers — client reads chunks progressively
+  res.setHeader('Content-Type', 'text/event-stream')
+  res.setHeader('Cache-Control', 'no-cache')
+  res.setHeader('Connection', 'keep-alive')
+
+  function sendChunk(text: string) {
+    res.write(`data: ${JSON.stringify({ chunk: text })}\n\n`)
+  }
+
+  if (USE_MOCK) {
+    const fullBody = mockApplySuggestion(plainBody, suggestion.originalText, suggestion.suggestedText)
+    const tokens = fullBody.split(/(\s+)/)
+    const delay = (ms: number) => new Promise<void>((r) => setTimeout(r, ms))
+    ;(async () => {
+      for (const token of tokens) {
+        if (token) sendChunk(token)
+        await delay(18)
+      }
+      res.write('data: [DONE]\n\n')
+      res.end()
+      console.log(`[ai] apply-suggestion  section="${section.heading}"  status=200 (mock)`)
+    })()
+    return
+  }
+
+  // Apply the string replacement deterministically on the server.
+  // This guarantees the change is actually incorporated — we then ask the AI
+  // only to smooth the result, which prevents the model from "playing it safe"
+  // and returning the original text unchanged.
+  const bodyWithEdit = plainBody.includes(suggestion.originalText)
+    ? plainBody.replace(suggestion.originalText, suggestion.suggestedText)
+    : (() => {
+        // originalText not found verbatim — ask AI to apply contextually instead
+        console.warn(`[ai] apply-suggestion  originalText not found verbatim in section "${section.heading}"`)
+        return null
+      })()
+
+  const userContent = bodyWithEdit !== null
+    ? [
+        `Section: "${section.heading}"`,
+        '',
+        'This draft has already had the following edit applied (replacement is inserted inline).',
+        'Smooth any awkward transitions so the text reads naturally. Preserve all added content.',
+        '',
+        bodyWithEdit,
+      ].join('\n')
+    : [
+        `Section: "${section.heading}"`,
+        '',
+        'Current content:',
+        plainBody,
+        '',
+        `The following change must be applied — find the closest matching passage and incorporate it:`,
+        `- Find: "${suggestion.originalText}"`,
+        `- Replace with: "${suggestion.suggestedText}"`,
+        `- Reason: ${suggestion.reason}`,
+        '',
+        'Return the complete revised section body.',
+      ].join('\n')
+
+  try {
+    console.log('[ai] apply-suggestion  openai call', {
+      section: section.heading,
+      originalText: suggestion.originalText,
+      suggestedText: suggestion.suggestedText,
+      reason: suggestion.reason,
+      replacedDirectly: bodyWithEdit !== null,
+    })
+    const stream = await openai.chat.completions.create({
+      model: 'gpt-4o',
+      temperature: 0.3,
+      stream: true,
+      messages: [
+        { role: 'system', content: getApplySuggestionSystemPrompt() },
+        { role: 'user', content: userContent },
+      ],
+    })
+    for await (const chunk of stream) {
+      const text = chunk.choices[0]?.delta?.content ?? ''
+      if (text) sendChunk(text)
+    }
+    res.write('data: [DONE]\n\n')
+    res.end()
+    console.log(`[ai] apply-suggestion  section="${section.heading}"  status=200`)
+  } catch (err) {
+    const message = err instanceof Error ? err.message : 'Apply suggestion failed'
+    console.error(`[ai] apply-suggestion  status=500  error=${message}`)
+    if (!res.headersSent) res.status(500).json({ error: message })
+    else res.end()
+  }
+})
 
 // ── POST /api/ai/draft ────────────────────────────────────────────────────────
 aiRouter.post('/draft', async (req, res) => {

@@ -55,26 +55,36 @@ export function DocumentProvider({ children }: { children: ReactNode }) {
     prev: fromStorage?.documents ?? [],
   })
 
-  // On first mount: if localStorage was empty, fetch seed data from server
+  // On first mount: if localStorage was empty, fetch seed data from server.
+  // If localStorage has documents, reconcile them with the server so the
+  // in-memory DB stays warm across server restarts.
   useEffect(() => {
-    if (state.documents.length > 0) return
-    dataService.getDocuments()
-      .then((documents) => {
-        if (!documents.length) return
-        // Pre-set the sync baseline BEFORE dispatching so the sync effect
-        // sees no diff and does not re-POST these server-originated documents.
-        syncRef.current.prev = documents
-        syncRef.current.initialized = true
-        const urlDocId = getUrlDocId()
-        const activeDocumentId =
-          urlDocId && documents.some((d) => d.id === urlDocId)
-            ? urlDocId
-            : documents[0].id
-        dispatch({ type: 'LOAD_INITIAL_DATA', documents, activeDocumentId })
-      })
-      .catch(() => {
-        console.warn('[data] Could not load initial documents from server')
-      })
+    if (state.documents.length === 0) {
+      // No local state — load from server
+      dataService.getDocuments()
+        .then((documents) => {
+          if (!documents.length) return
+          syncRef.current.prev = documents
+          syncRef.current.initialized = true
+          const urlDocId = getUrlDocId()
+          const activeDocumentId =
+            urlDocId && documents.some((d) => d.id === urlDocId)
+              ? urlDocId
+              : documents[0].id
+          dispatch({ type: 'LOAD_INITIAL_DATA', documents, activeDocumentId })
+        })
+        .catch(() => {
+          console.warn('[data] Could not load initial documents from server')
+        })
+    } else {
+      // Local state exists — push it to the server so the in-memory DB is warm.
+      // Use createDocument; 409 Conflict (already exists) is silently ignored.
+      for (const doc of state.documents) {
+        dataService.createDocument(doc).catch(() => {
+          // 409 = server already has this doc (normal case, not a restart)
+        })
+      }
+    }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
@@ -116,9 +126,17 @@ export function DocumentProvider({ children }: { children: ReactNode }) {
           console.error(`[data] POST /documents failed: ${err instanceof Error ? err.message : err}`)
         )
       } else if (prevDoc !== doc) {
-        dataService.updateDocument(doc.id, doc).catch((err) =>
-          console.error(`[data] PATCH /documents/${doc.id} failed: ${err instanceof Error ? err.message : err}`)
-        )
+        dataService.updateDocument(doc.id, doc).catch((err) => {
+          const msg = err instanceof Error ? err.message : String(err)
+          if (msg.includes('not found')) {
+            // Server lost state (restart) — recreate the document
+            dataService.createDocument(doc).catch((e) =>
+              console.error(`[data] POST /documents (fallback) failed: ${e instanceof Error ? e.message : e}`)
+            )
+          } else {
+            console.error(`[data] PATCH /documents/${doc.id} failed: ${msg}`)
+          }
+        })
       }
     }
   }, [state.documents])

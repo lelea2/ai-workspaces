@@ -82,6 +82,16 @@ function commentForSection(section: Section, agentName: string): string {
   return 'Consider adding concrete examples or references to strengthen this section\'s credibility.'
 }
 
+export function mockApplySuggestion(
+  _plainBody: string,
+  _originalText: string,
+  suggestedText: string,
+): string {
+  // The mock's suggestedText is already the complete intended new section body
+  // (original body + appended addition), so use it directly.
+  return suggestedText
+}
+
 export function mockDraft(prompt: string): Section[] {
   const t = Date.now()
   const topic = prompt.replace(/^create\s+a?\s*/i, '').trim() || 'this project'

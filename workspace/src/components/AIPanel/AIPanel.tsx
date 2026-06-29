@@ -7,18 +7,36 @@ import { useUI } from '../../store/UIContext'
 import { formatRelativeTime } from '../../utils/time'
 import type { Suggestion, Comment } from '../../types'
 import type { Action } from '../../store/actions'
+import { diffLines } from '../../utils/diff'
+import { extractPlainText } from '../../utils/lexical'
 
 // ---------- Suggestion card ----------
 
 function SuggestionCard({
   suggestion,
+  originalBody,
   onAccept,
   onDismiss,
+  onApprove,
+  onDiscard,
+  isApplying = false,
+  streamingBody,
+  pendingBody,
 }: {
   suggestion: Suggestion
+  originalBody: string
   onAccept: () => void
   onDismiss: () => void
+  onApprove: () => void
+  onDiscard: () => void
+  isApplying?: boolean
+  streamingBody?: string
+  pendingBody?: string
 }) {
+  const hasPending = pendingBody !== undefined && !isApplying
+  const chunks = hasPending ? diffLines(originalBody, pendingBody) : []
+  const hasChanges = chunks.some((c) => c.type !== 'equal')
+
   return (
     <div
       className={`border rounded-lg p-3 transition-colors ${
@@ -26,6 +44,8 @@ function SuggestionCard({
           ? 'bg-green-50 border-green-200'
           : suggestion.status === 'rejected'
           ? 'bg-gray-50 border-gray-200 opacity-60'
+          : hasPending
+          ? 'bg-white border-blue-200'
           : 'bg-white border-gray-200'
       }`}
     >
@@ -40,25 +60,105 @@ function SuggestionCard({
 
       <p className="text-xs text-gray-700 leading-relaxed mb-1">{suggestion.reason}</p>
 
-      {suggestion.status === 'pending' ? (
+      {/* Live streaming typewriter preview */}
+      {isApplying && (
+        <div className="mt-2 mb-2 rounded-md bg-blue-50 border border-blue-100 px-2.5 py-2">
+          <p className="text-[10px] font-semibold text-blue-500 uppercase tracking-wide mb-1 flex items-center gap-1">
+            <svg width="8" height="8" viewBox="0 0 8 8" fill="none" className="animate-pulse">
+              <circle cx="4" cy="4" r="4" fill="currentColor" />
+            </svg>
+            AI rewriting…
+          </p>
+          <p className="text-[11px] text-blue-800 leading-relaxed whitespace-pre-wrap">
+            {streamingBody ?? ''}
+            <span className="inline-block w-0.5 h-3 bg-blue-400 ml-0.5 animate-pulse align-middle" />
+          </p>
+        </div>
+      )}
+
+      {/* Diff view — awaiting user approval */}
+      {hasPending && (
+        <div className="mt-2 mb-2 rounded-md border border-gray-200 overflow-hidden text-[11px] font-mono leading-relaxed">
+          <div className="bg-gray-50 px-2.5 py-1 border-b border-gray-200 text-[10px] font-sans font-semibold text-gray-500 uppercase tracking-wide">
+            Review changes
+          </div>
+          <div className="max-h-48 overflow-y-auto px-2.5 py-1.5 space-y-px">
+            {hasChanges ? chunks.map((chunk, i) => (
+              <div
+                key={i}
+                className={`px-1 rounded-sm whitespace-pre-wrap ${
+                  chunk.type === 'delete'
+                    ? 'bg-red-50 text-red-700 line-through'
+                    : chunk.type === 'insert'
+                    ? 'bg-green-50 text-green-700'
+                    : 'text-gray-500'
+                }`}
+              >
+                <span className="select-none mr-1 opacity-50">
+                  {chunk.type === 'delete' ? '−' : chunk.type === 'insert' ? '+' : ' '}
+                </span>
+                {chunk.text || <span className="opacity-30">{'(empty line)'}</span>}
+              </div>
+            )) : (
+              <p className="text-gray-400 px-1 py-1">No textual changes detected.</p>
+            )}
+          </div>
+        </div>
+      )}
+
+      {suggestion.status === 'pending' && !hasPending ? (
         <div className="flex gap-1.5 mt-2.5">
           <button
             onClick={onAccept}
-            className="flex-1 flex items-center justify-center gap-1 py-1 text-[11px] font-medium text-green-700 bg-green-50 border border-green-200 rounded-md hover:bg-green-100 transition-colors"
+            disabled={isApplying}
+            className="flex-1 flex items-center justify-center gap-1 py-1 text-[11px] font-medium text-green-700 bg-green-50 border border-green-200 rounded-md hover:bg-green-100 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
           >
-            <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
-              <path d="M2 5l2.5 2.5L8 3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
-            Accept
+            {isApplying ? (
+              <>
+                <svg width="10" height="10" viewBox="0 0 10 10" fill="none" className="animate-spin">
+                  <circle cx="5" cy="5" r="3.5" stroke="currentColor" strokeWidth="1.5" strokeDasharray="6 6" />
+                </svg>
+                Rewriting…
+              </>
+            ) : (
+              <>
+                <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
+                  <path d="M2 5l2.5 2.5L8 3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+                Accept
+              </>
+            )}
           </button>
           <button
             onClick={onDismiss}
-            className="flex-1 flex items-center justify-center gap-1 py-1 text-[11px] font-medium text-gray-600 bg-gray-50 border border-gray-200 rounded-md hover:bg-gray-100 transition-colors"
+            disabled={isApplying}
+            className="flex-1 flex items-center justify-center gap-1 py-1 text-[11px] font-medium text-gray-600 bg-gray-50 border border-gray-200 rounded-md hover:bg-gray-100 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
           >
             <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
               <path d="M3 3l4 4M7 3L3 7" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
             </svg>
             Dismiss
+          </button>
+        </div>
+      ) : suggestion.status === 'pending' && hasPending ? (
+        <div className="flex gap-1.5 mt-2.5">
+          <button
+            onClick={onApprove}
+            className="flex-1 flex items-center justify-center gap-1 py-1 text-[11px] font-medium text-white bg-green-600 border border-green-700 rounded-md hover:bg-green-700 transition-colors"
+          >
+            <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
+              <path d="M2 5l2.5 2.5L8 3" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+            Approve &amp; apply
+          </button>
+          <button
+            onClick={onDiscard}
+            className="flex-1 flex items-center justify-center gap-1 py-1 text-[11px] font-medium text-gray-600 bg-gray-50 border border-gray-200 rounded-md hover:bg-gray-100 transition-colors"
+          >
+            <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
+              <path d="M3 3l4 4M7 3L3 7" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+            </svg>
+            Discard
           </button>
         </div>
       ) : (
@@ -301,13 +401,17 @@ function Spinner() {
 
 export default function AIPanel() {
   const { activeDocument, isGenerating, isReviewing, dispatch } = useDocument()
-  const { generateDraft, runReview } = useAI()
+  const { generateDraft, runReview, acceptSuggestion, applyAcceptedSuggestion } = useAI()
   const { panelOpen } = useUI()
 
   const [agents, setAgents] = useState<AgentConfig[]>([])
   const [activeAgentId, setActiveAgentId] = useState('reviewer')
   const [prompt, setPrompt] = useState('')
   const [activeTab, setActiveTab] = useState<'suggestions' | 'comments'>('suggestions')
+  const [applyingIds, setApplyingIds] = useState<Set<string>>(new Set())
+  const [streamingContents, setStreamingContents] = useState<Map<string, string>>(new Map())
+  // suggestionId → final AI body awaiting user approval (diff shown, not yet committed)
+  const [pendingApprovals, setPendingApprovals] = useState<Map<string, string>>(new Map())
 
   useEffect(() => {
     dataService.getAgents().then((list) => {
@@ -352,9 +456,36 @@ export default function AIPanel() {
     }
   }
 
-  function handleAccept(suggestion: Suggestion) {
-    if (!activeDocument) return
-    dispatch({ type: 'ACCEPT_SUGGESTION', docId: activeDocument.id, suggestionId: suggestion.id })
+  async function handleAccept(suggestion: Suggestion) {
+    if (!activeDocument || applyingIds.has(suggestion.id) || pendingApprovals.has(suggestion.id)) return
+    setApplyingIds((prev) => new Set(prev).add(suggestion.id))
+    setStreamingContents((prev) => { const m = new Map(prev); m.set(suggestion.id, ''); return m })
+    try {
+      const aiBody = await acceptSuggestion(suggestion, (chunk) => {
+        setStreamingContents((prev) => {
+          const m = new Map(prev)
+          m.set(suggestion.id, (m.get(suggestion.id) ?? '') + chunk)
+          return m
+        })
+      })
+      // Store the final body for user approval — do NOT commit yet
+      if (aiBody) {
+        setPendingApprovals((prev) => { const m = new Map(prev); m.set(suggestion.id, aiBody); return m })
+      }
+    } finally {
+      setApplyingIds((prev) => { const s = new Set(prev); s.delete(suggestion.id); return s })
+      setStreamingContents((prev) => { const m = new Map(prev); m.delete(suggestion.id); return m })
+    }
+  }
+
+  function handleApprove(suggestion: Suggestion) {
+    const aiBody = pendingApprovals.get(suggestion.id)
+    setPendingApprovals((prev) => { const m = new Map(prev); m.delete(suggestion.id); return m })
+    applyAcceptedSuggestion(suggestion, aiBody)
+  }
+
+  function handleDiscard(suggestion: Suggestion) {
+    setPendingApprovals((prev) => { const m = new Map(prev); m.delete(suggestion.id); return m })
   }
 
   function handleDismiss(suggestion: Suggestion) {
@@ -475,14 +606,24 @@ export default function AIPanel() {
           <div className="space-y-2">
             {isReviewing && <SuggestionSkeleton />}
             {!isReviewing && suggestions.length === 0 && <EmptySuggestions />}
-            {suggestions.map((suggestion) => (
-              <SuggestionCard
-                key={suggestion.id}
-                suggestion={suggestion}
-                onAccept={() => handleAccept(suggestion)}
-                onDismiss={() => handleDismiss(suggestion)}
-              />
-            ))}
+            {suggestions.map((suggestion) => {
+              const section = activeDocument?.sections.find((s) => s.id === suggestion.sectionId)
+              const originalBody = section ? extractPlainText(section.body) : ''
+              return (
+                <SuggestionCard
+                  key={suggestion.id}
+                  suggestion={suggestion}
+                  originalBody={originalBody}
+                  onAccept={() => handleAccept(suggestion)}
+                  onDismiss={() => handleDismiss(suggestion)}
+                  onApprove={() => handleApprove(suggestion)}
+                  onDiscard={() => handleDiscard(suggestion)}
+                  isApplying={applyingIds.has(suggestion.id)}
+                  streamingBody={streamingContents.get(suggestion.id)}
+                  pendingBody={pendingApprovals.get(suggestion.id)}
+                />
+              )
+            })}
             {!isReviewing &&
               suggestions.length > 0 &&
               suggestions.every((s) => s.status !== 'pending') &&
