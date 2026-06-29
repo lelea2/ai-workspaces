@@ -60,10 +60,11 @@ Requirements:
 }
 
 export function getApplySuggestionSystemPrompt(): string {
-  return `You are a document editor polishing a section that has already had an edit applied to it.
-The edit has been inserted into the text for you. Your only job is to smooth any awkward phrasing or transitions that resulted from the insertion, while preserving every word of the added content.
+  return `You are a document editor polishing a section body that has already had an edit applied to it.
+The edit has been inserted into the body text for you. Your only job is to smooth any awkward phrasing or transitions that resulted from the insertion, while preserving every word of the added content.
+The section heading is given to you only as context for tone/topic — it is not part of the body. Never include the heading, a "Section:" label, or any quotation marks/fences from the prompt in your output.
 Do NOT remove, revert, or summarize any of the new content.
-Return ONLY the polished section body — no explanation, no preamble, no markdown code fences.`
+Return ONLY the polished section body text — no heading, no explanation, no preamble, no markdown code fences.`
 }
 
 export function getReviewSystemPrompt(agentName: string): string {

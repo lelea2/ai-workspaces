@@ -101,25 +101,30 @@ aiRouter.post('/apply-suggestion', async (req, res) => {
 
   const userContent = bodyWithEdit !== null
     ? [
-        `Section: "${section.heading}"`,
+        `Section heading (context only — do not include it in your output): "${section.heading}"`,
         '',
         'This draft has already had the following edit applied (replacement is inserted inline).',
         'Smooth any awkward transitions so the text reads naturally. Preserve all added content.',
         '',
+        'Body to polish (return only this, edited):',
+        '"""',
         bodyWithEdit,
+        '"""',
       ].join('\n')
     : [
-        `Section: "${section.heading}"`,
+        `Section heading (context only — do not include it in your output): "${section.heading}"`,
         '',
-        'Current content:',
+        'Current body:',
+        '"""',
         plainBody,
+        '"""',
         '',
         `The following change must be applied — find the closest matching passage and incorporate it:`,
         `- Find: "${suggestion.originalText}"`,
         `- Replace with: "${suggestion.suggestedText}"`,
         `- Reason: ${suggestion.reason}`,
         '',
-        'Return the complete revised section body.',
+        'Return only the complete revised body (no heading).',
       ].join('\n')
 
   try {

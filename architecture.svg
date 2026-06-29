@@ -1,0 +1,267 @@
+<svg width="1120" height="760" xmlns="http://www.w3.org/2000/svg" font-family="ui-sans-serif, system-ui, -apple-system, sans-serif">
+  <defs>
+    <marker id="arr" markerWidth="7" markerHeight="7" refX="5" refY="3" orient="auto">
+      <path d="M0,0 L0,6 L7,3 z" fill="#64748B"/>
+    </marker>
+    <marker id="arr-purple" markerWidth="7" markerHeight="7" refX="5" refY="3" orient="auto">
+      <path d="M0,0 L0,6 L7,3 z" fill="#7C3AED"/>
+    </marker>
+    <marker id="arr-green" markerWidth="7" markerHeight="7" refX="5" refY="3" orient="auto">
+      <path d="M0,0 L0,6 L7,3 z" fill="#059669"/>
+    </marker>
+    <marker id="arr-orange" markerWidth="7" markerHeight="7" refX="5" refY="3" orient="auto">
+      <path d="M0,0 L0,6 L7,3 z" fill="#D97706"/>
+    </marker>
+    <marker id="arr-blue" markerWidth="7" markerHeight="7" refX="5" refY="3" orient="auto">
+      <path d="M0,0 L0,6 L7,3 z" fill="#2563EB"/>
+    </marker>
+  </defs>
+
+  <!-- Canvas background -->
+  <rect width="1120" height="760" fill="#F8FAFC" rx="10"/>
+
+  <!-- ── Title ─────────────────────────────────────────────────── -->
+  <text x="560" y="30" text-anchor="middle" font-size="15" font-weight="700" fill="#0F172A">AI Collaborative Workspace — Component Architecture</text>
+
+  <!-- ═══════════════════════════════════════════════════════════
+       BROWSER / REACT SECTION   y 45–405
+  ═══════════════════════════════════════════════════════════════ -->
+  <rect x="12" y="44" width="1096" height="358" rx="10" fill="#EFF6FF" stroke="#BAE6FD" stroke-width="1.5"/>
+  <text x="24" y="62" font-size="10" font-weight="700" letter-spacing="0.8" fill="#0369A1">BROWSER / REACT</text>
+
+  <!-- ─── UI Components label ─── -->
+  <text x="24" y="82" font-size="9" fill="#64748B" font-style="italic">UI Components</text>
+
+  <!-- ── Sidebar ──────────────────── -->
+  <rect x="22" y="88" width="148" height="110" rx="6" fill="white" stroke="#93C5FD" stroke-width="1.5"/>
+  <rect x="22" y="88" width="148" height="22" rx="6" fill="#DBEAFE"/>
+  <rect x="22" y="98"  width="148" height="12"  fill="#DBEAFE"/>
+  <text x="96" y="103" text-anchor="middle" font-size="11" font-weight="600" fill="#1D4ED8">Sidebar</text>
+  <text x="32" y="122" font-size="9.5" fill="#334155">• Document list + status badges</text>
+  <text x="32" y="136" font-size="9.5" fill="#334155">• Template hover → popover preview</text>
+  <text x="32" y="150" font-size="9.5" fill="#334155">• Create doc from template</text>
+  <text x="32" y="164" font-size="9.5" fill="#334155">• Delete with confirmation</text>
+  <text x="32" y="178" font-size="9.5" fill="#334155">• Draft lock badge</text>
+
+  <!-- ── Editor / LexicalEditor ───── -->
+  <rect x="185" y="88" width="225" height="110" rx="6" fill="white" stroke="#93C5FD" stroke-width="1.5"/>
+  <rect x="185" y="88" width="225" height="22" rx="6" fill="#DBEAFE"/>
+  <rect x="185" y="98"  width="225" height="12"  fill="#DBEAFE"/>
+  <text x="297" y="103" text-anchor="middle" font-size="11" font-weight="600" fill="#1D4ED8">Editor + LexicalEditor</text>
+  <text x="195" y="122" font-size="9.5" fill="#334155">• SectionRow per section</text>
+  <text x="195" y="136" font-size="9.5" fill="#334155">• Rich-text editing (Lexical)</text>
+  <text x="195" y="150" font-size="9.5" fill="#334155">• CommentBubble inline</text>
+  <text x="195" y="164" font-size="9.5" fill="#334155">• onChange → debounced EDIT_SECTION</text>
+  <text x="195" y="178" font-size="9.5" fill="#334155">• externalVersion → remounts on AI body</text>
+
+  <!-- ── AIPanel ───────────────────── -->
+  <rect x="425" y="88" width="190" height="110" rx="6" fill="white" stroke="#93C5FD" stroke-width="1.5"/>
+  <rect x="425" y="88" width="190" height="22" rx="6" fill="#DBEAFE"/>
+  <rect x="425" y="98"  width="190" height="12"  fill="#DBEAFE"/>
+  <text x="520" y="103" text-anchor="middle" font-size="11" font-weight="600" fill="#1D4ED8">AI Panel</text>
+  <text x="435" y="122" font-size="9.5" fill="#334155">• Agent selector</text>
+  <text x="435" y="136" font-size="9.5" fill="#334155">• SuggestionCard + diff view</text>
+  <text x="435" y="150" font-size="9.5" fill="#334155">• Streaming typewriter preview</text>
+  <text x="435" y="164" font-size="9.5" fill="#334155">• Approve / Discard flow</text>
+  <text x="435" y="178" font-size="9.5" fill="#334155">• CommentItem + reply thread</text>
+
+  <!-- ── Timeline ──────────────────── -->
+  <rect x="630" y="88" width="158" height="110" rx="6" fill="white" stroke="#93C5FD" stroke-width="1.5"/>
+  <rect x="630" y="88" width="158" height="22" rx="6" fill="#DBEAFE"/>
+  <rect x="630" y="98"  width="158" height="12"  fill="#DBEAFE"/>
+  <text x="709" y="103" text-anchor="middle" font-size="11" font-weight="600" fill="#1D4ED8">Timeline</text>
+  <text x="640" y="122" font-size="9.5" fill="#334155">• Activity event log</text>
+  <text x="640" y="136" font-size="9.5" fill="#334155">• Human + AI-authored events</text>
+  <text x="640" y="150" font-size="9.5" fill="#334155">• Dedup by event.id</text>
+  <text x="640" y="164" font-size="9.5" fill="#334155">• published / accepted / edited</text>
+
+  <!-- ── Header ───────────────────── -->
+  <rect x="803" y="88" width="290" height="110" rx="6" fill="white" stroke="#93C5FD" stroke-width="1.5"/>
+  <rect x="803" y="88" width="290" height="22" rx="6" fill="#DBEAFE"/>
+  <rect x="803" y="98"  width="290" height="12"  fill="#DBEAFE"/>
+  <text x="948" y="103" text-anchor="middle" font-size="11" font-weight="600" fill="#1D4ED8">Header / App Shell</text>
+  <text x="813" y="122" font-size="9.5" fill="#334155">• Editable document title (onBlur → UPDATE_DOCUMENT_TITLE)</text>
+  <text x="813" y="136" font-size="9.5" fill="#334155">• Draft banner + Publish button → PUBLISH_DOCUMENT</text>
+  <text x="813" y="150" font-size="9.5" fill="#334155">• Toggle AI panel (UIContext)</text>
+  <text x="813" y="164" font-size="9.5" fill="#334155">• Word count footer</text>
+
+  <!-- ─── State / Hooks label ─── -->
+  <text x="24" y="222" font-size="9" fill="#64748B" font-style="italic">State Management + Hooks</text>
+
+  <!-- ── DocumentContext + Reducer ── -->
+  <rect x="22" y="228" width="480" height="90" rx="6" fill="white" stroke="#C4B5FD" stroke-width="1.5"/>
+  <rect x="22" y="228" width="480" height="22" rx="6" fill="#EDE9FE"/>
+  <rect x="22" y="238" width="480" height="12"  fill="#EDE9FE"/>
+  <text x="262" y="244" text-anchor="middle" font-size="11" font-weight="600" fill="#5B21B6">DocumentContext + documentReducer</text>
+  <text x="32" y="263" font-size="9.5" fill="#334155">• useReducer: documents[], activeDocumentId, isGenerating, isReviewing</text>
+  <text x="32" y="277" font-size="9.5" fill="#334155">• Actions: LOAD_INITIAL_DATA · EDIT_SECTION · ACCEPT_SUGGESTION · PUBLISH_DOCUMENT · DELETE_DOCUMENT · RUN_REVIEW_SUCCESS …</text>
+  <text x="32" y="291" font-size="9.5" fill="#334155">• localStorage persistence on every state change</text>
+  <text x="32" y="305" font-size="9.5" fill="#334155">• Sync effect: diffs prev→current docs → fires POST / PATCH / DELETE to server; PATCH 404 retries as POST</text>
+
+  <!-- ── UIContext ─────────────────── -->
+  <rect x="515" y="228" width="130" height="90" rx="6" fill="white" stroke="#C4B5FD" stroke-width="1.5"/>
+  <rect x="515" y="228" width="130" height="22" rx="6" fill="#EDE9FE"/>
+  <rect x="515" y="238" width="130" height="12"  fill="#EDE9FE"/>
+  <text x="580" y="244" text-anchor="middle" font-size="11" font-weight="600" fill="#5B21B6">UIContext</text>
+  <text x="525" y="263" font-size="9.5" fill="#334155">• panelOpen state</text>
+  <text x="525" y="277" font-size="9.5" fill="#334155">• togglePanel()</text>
+  <text x="525" y="291" font-size="9.5" fill="#334155">• used by Header</text>
+  <text x="525" y="305" font-size="9.5" fill="#334155">  and AIPanel</text>
+
+  <!-- ── Hooks ─────────────────────── -->
+  <rect x="658" y="228" width="440" height="90" rx="6" fill="white" stroke="#C4B5FD" stroke-width="1.5"/>
+  <rect x="658" y="228" width="440" height="22" rx="6" fill="#EDE9FE"/>
+  <rect x="658" y="238" width="440" height="12"  fill="#EDE9FE"/>
+  <text x="878" y="244" text-anchor="middle" font-size="11" font-weight="600" fill="#5B21B6">Custom Hooks</text>
+  <text x="668" y="263" font-size="9.5" fill="#334155">• useDocument()  — reads DocumentContext; exposes { activeDocument, dispatch, isGenerating, isReviewing }</text>
+  <text x="668" y="277" font-size="9.5" fill="#334155">• useAI()  — generateDraft · runReview · acceptSuggestion (returns body, no dispatch) · applyAcceptedSuggestion (dispatches)</text>
+  <text x="668" y="291" font-size="9.5" fill="#334155">• useUI()  — panelOpen, togglePanel</text>
+
+  <!-- ─── Services label ─── -->
+  <text x="24" y="342" font-size="9" fill="#64748B" font-style="italic">Client Services</text>
+
+  <!-- ── dataService ────────────────── -->
+  <rect x="22" y="349" width="300" height="52" rx="6" fill="white" stroke="#6EE7B7" stroke-width="1.5"/>
+  <rect x="22" y="349" width="300" height="20" rx="6" fill="#D1FAE5"/>
+  <rect x="22" y="357" width="300" height="12"  fill="#D1FAE5"/>
+  <text x="172" y="363" text-anchor="middle" font-size="11" font-weight="600" fill="#065F46">dataService</text>
+  <text x="32" y="381" font-size="9.5" fill="#334155">getDocuments · getDocument · createDocument · updateDocument · deleteDocument</text>
+  <text x="32" y="393" font-size="9.5" fill="#334155">apiFetch wrapper — handles 204 (no body) and propagates errors</text>
+
+  <!-- ── ProxyAIService ─────────────── -->
+  <rect x="338" y="349" width="360" height="52" rx="6" fill="white" stroke="#6EE7B7" stroke-width="1.5"/>
+  <rect x="338" y="349" width="360" height="20" rx="6" fill="#D1FAE5"/>
+  <rect x="338" y="357" width="360" height="12"  fill="#D1FAE5"/>
+  <text x="518" y="363" text-anchor="middle" font-size="11" font-weight="600" fill="#065F46">ProxyAIService</text>
+  <text x="348" y="381" font-size="9.5" fill="#334155">generateDraft · reviewDocument → standard JSON fetch</text>
+  <text x="348" y="393" font-size="9.5" fill="#334155">applySuggestion → SSE ReadableStream reader; accumulates chunks; calls onChunk()</text>
+
+  <!-- ═══════════════════════════════════════════════════════════
+       HTTP BOUNDARY
+  ═══════════════════════════════════════════════════════════════ -->
+  <line x1="12" y1="416" x2="1108" y2="416" stroke="#94A3B8" stroke-width="2" stroke-dasharray="8,4"/>
+  <rect x="446" y="407" width="195" height="18" rx="4" fill="#E2E8F0"/>
+  <text x="543" y="420" text-anchor="middle" font-size="9.5" font-weight="600" fill="#475569">HTTP / SSE  boundary</text>
+
+  <!-- ═══════════════════════════════════════════════════════════
+       EXPRESS SERVER SECTION   y 424–720
+  ═══════════════════════════════════════════════════════════════ -->
+  <rect x="12" y="424" width="1096" height="298" rx="10" fill="#FFFBEB" stroke="#FCD34D" stroke-width="1.5"/>
+  <text x="24" y="441" font-size="10" font-weight="700" letter-spacing="0.8" fill="#92400E">EXPRESS SERVER (Node.js + ESM)</text>
+
+  <!-- ─── Routes label ─── -->
+  <text x="24" y="461" font-size="9" fill="#64748B" font-style="italic">Route handlers</text>
+
+  <!-- ── /api/data/* ───────────────── -->
+  <rect x="22" y="468" width="330" height="105" rx="6" fill="white" stroke="#FCD34D" stroke-width="1.5"/>
+  <rect x="22" y="468" width="330" height="22" rx="6" fill="#FEF3C7"/>
+  <rect x="22" y="478" width="330" height="12"  fill="#FEF3C7"/>
+  <text x="187" y="484" text-anchor="middle" font-size="11" font-weight="600" fill="#92400E">/api/data/*   (routes/data.ts)</text>
+  <text x="32" y="503" font-size="9.5" fill="#334155">GET  /documents              → getDocuments()</text>
+  <text x="32" y="517" font-size="9.5" fill="#334155">POST /documents              → createDocument()  [409 if exists]</text>
+  <text x="32" y="531" font-size="9.5" fill="#334155">PATCH /documents/:id         → updateDocument()  [404 if missing]</text>
+  <text x="32" y="545" font-size="9.5" fill="#334155">DELETE /documents/:id        → deleteDocument()  [204]</text>
+  <text x="32" y="559" font-size="9.5" fill="#334155">GET /templates   GET /templates/:id/sections   GET /agents</text>
+
+  <!-- ── /api/ai/* ─────────────────── -->
+  <rect x="368" y="468" width="430" height="105" rx="6" fill="white" stroke="#FCD34D" stroke-width="1.5"/>
+  <rect x="368" y="468" width="430" height="22" rx="6" fill="#FEF3C7"/>
+  <rect x="368" y="478" width="430" height="12"  fill="#FEF3C7"/>
+  <text x="583" y="484" text-anchor="middle" font-size="11" font-weight="600" fill="#92400E">/api/ai/*   (routes/ai.ts)     MOCK_AI=true skips OpenAI</text>
+  <text x="378" y="503" font-size="9.5" fill="#334155">POST /draft           → mockDraft() | gpt-4o JSON → sections[]</text>
+  <text x="378" y="517" font-size="9.5" fill="#334155">POST /review          → mockReview() | gpt-4o JSON → { comments[], suggestions[] }</text>
+  <text x="378" y="531" font-size="9.5" fill="#334155">POST /apply-suggestion → server str.replace(orig, sugg) first</text>
+  <text x="378" y="545" font-size="9.5" fill="#334155">                         then gpt-4o stream:true polishes result</text>
+  <text x="378" y="559" font-size="9.5" fill="#334155">                         streams  data:{"chunk":"…"}\n\n  per token  →  data:[DONE]\n\n</text>
+
+  <!-- ─── Storage + External label ─── -->
+  <text x="24" y="592" font-size="9" fill="#64748B" font-style="italic">Storage + External</text>
+
+  <!-- ── In-memory DB ──────────────── -->
+  <rect x="22" y="599" width="270" height="110" rx="6" fill="white" stroke="#FCD34D" stroke-width="1.5"/>
+  <rect x="22" y="599" width="270" height="22" rx="6" fill="#FEF3C7"/>
+  <rect x="22" y="609" width="270" height="12"  fill="#FEF3C7"/>
+  <text x="157" y="615" text-anchor="middle" font-size="11" font-weight="600" fill="#92400E">In-memory DB  (db.ts)</text>
+  <text x="32" y="634" font-size="9.5" fill="#334155">• Map&lt;id, Document&gt; — resets on restart</text>
+  <text x="32" y="648" font-size="9.5" fill="#334155">• Seeded with 3 template docs on boot</text>
+  <text x="32" y="662" font-size="9.5" fill="#334155">• getDocuments / getDocument / createDocument</text>
+  <text x="32" y="676" font-size="9.5" fill="#334155">  updateDocument / deleteDocument</text>
+  <text x="32" y="690" font-size="9.5" fill="#334155">• Client reconciles on startup via POST (409 = ok)</text>
+
+  <!-- ── OpenAI ─────────────────────── -->
+  <rect x="308" y="599" width="280" height="110" rx="6" fill="white" stroke="#FBCFE8" stroke-width="1.5"/>
+  <rect x="308" y="599" width="280" height="22" rx="6" fill="#FCE7F3"/>
+  <rect x="308" y="609" width="280" height="12"  fill="#FCE7F3"/>
+  <text x="448" y="615" text-anchor="middle" font-size="11" font-weight="600" fill="#9D174D">OpenAI   gpt-4o</text>
+  <text x="318" y="634" font-size="9.5" fill="#334155">• Draft: response_format: json_object, t=0.7</text>
+  <text x="318" y="648" font-size="9.5" fill="#334155">• Review: response_format: json_object, t=0.4</text>
+  <text x="318" y="662" font-size="9.5" fill="#334155">• Apply: stream: true, t=0.3</text>
+  <text x="318" y="676" font-size="9.5" fill="#334155">  server str.replace first, AI only polishes</text>
+  <text x="318" y="690" font-size="9.5" fill="#334155">  → prevents "return original unchanged" bug</text>
+
+  <!-- ── Legend ────────────────────── -->
+  <rect x="606" y="599" width="490" height="110" rx="6" fill="white" stroke="#E2E8F0" stroke-width="1.5"/>
+  <text x="851" y="617" text-anchor="middle" font-size="11" font-weight="600" fill="#374151">Legend</text>
+  <!-- read/dispatch -->
+  <line x1="622" y1="634" x2="668" y2="634" stroke="#7C3AED" stroke-width="1.5" marker-end="url(#arr-purple)"/>
+  <text x="676" y="638" font-size="9.5" fill="#475569">reads state / dispatches action (useDocument)</text>
+  <!-- REST -->
+  <line x1="622" y1="654" x2="668" y2="654" stroke="#059669" stroke-width="1.5" marker-end="url(#arr-green)"/>
+  <text x="676" y="658" font-size="9.5" fill="#475569">HTTP REST request (dataService / AI fetch)</text>
+  <!-- SSE -->
+  <line x1="622" y1="674" x2="668" y2="674" stroke="#D97706" stroke-width="2" stroke-dasharray="5,3" marker-end="url(#arr-orange)"/>
+  <text x="676" y="678" font-size="9.5" fill="#475569">SSE streaming chunks (apply-suggestion)</text>
+  <!-- internal -->
+  <line x1="622" y1="694" x2="668" y2="694" stroke="#64748B" stroke-width="1.5" marker-end="url(#arr)"/>
+  <text x="676" y="698" font-size="9.5" fill="#475569">internal server call (route → db)</text>
+
+  <!-- ═══════════════════════════════════════════════════════════
+       ARROWS
+  ═══════════════════════════════════════════════════════════════ -->
+
+  <!-- UI components → DocumentContext (purple) -->
+  <!-- Sidebar → DocCtx -->
+  <line x1="96" y1="198" x2="96" y2="227" stroke="#7C3AED" stroke-width="1.5" marker-end="url(#arr-purple)"/>
+  <!-- Editor → DocCtx -->
+  <line x1="297" y1="198" x2="220" y2="227" stroke="#7C3AED" stroke-width="1.5" marker-end="url(#arr-purple)"/>
+  <!-- Timeline → DocCtx -->
+  <line x1="709" y1="198" x2="420" y2="227" stroke="#7C3AED" stroke-width="1.5" marker-end="url(#arr-purple)"/>
+
+  <!-- AIPanel → Hooks -->
+  <line x1="520" y1="198" x2="780" y2="227" stroke="#7C3AED" stroke-width="1.5" marker-end="url(#arr-purple)"/>
+  <!-- Header → UIContext / Hooks -->
+  <line x1="948" y1="198" x2="880" y2="227" stroke="#7C3AED" stroke-width="1.5" marker-end="url(#arr-purple)"/>
+
+  <!-- DocumentContext sync → dataService (green) -->
+  <line x1="172" y1="318" x2="172" y2="348" stroke="#059669" stroke-width="1.5" marker-end="url(#arr-green)"/>
+  <text x="108" y="337" font-size="8.5" fill="#059669">sync effect</text>
+
+  <!-- useAI in Hooks → ProxyAIService (green) -->
+  <line x1="820" y1="318" x2="570" y2="348" stroke="#059669" stroke-width="1.5" marker-end="url(#arr-green)"/>
+  <text x="678" y="337" font-size="8.5" fill="#059669">useAI calls</text>
+
+  <!-- dataService → /api/data/* (green, down through HTTP line) -->
+  <line x1="172" y1="401" x2="172" y2="467" stroke="#059669" stroke-width="1.5" marker-end="url(#arr-green)"/>
+
+  <!-- ProxyAIService → /api/ai/* (green) -->
+  <line x1="518" y1="401" x2="560" y2="467" stroke="#059669" stroke-width="1.5" marker-end="url(#arr-green)"/>
+
+  <!-- /api/ai/* SSE → ProxyAIService (orange dashed, going up) -->
+  <line x1="530" y1="467" x2="488" y2="402" stroke="#D97706" stroke-width="1.5" stroke-dasharray="5,3" marker-end="url(#arr-orange)"/>
+  <text x="502" y="440" font-size="8" fill="#D97706">SSE stream</text>
+
+  <!-- /api/data/* → In-memory DB (gray) -->
+  <line x1="187" y1="573" x2="187" y2="598" stroke="#64748B" stroke-width="1.5" marker-end="url(#arr)"/>
+
+  <!-- /api/ai/* → OpenAI (gray) -->
+  <line x1="490" y1="573" x2="448" y2="598" stroke="#64748B" stroke-width="1.5" marker-end="url(#arr)"/>
+
+  <!-- ProxyAIService onChunk → AIPanel (orange dashed, goes up through HTTP line) -->
+  <!-- Already shown by SSE arrow above; add label annotation instead -->
+  <text x="615" y="410" font-size="8" fill="#D97706">onChunk() → streamingContents → typewriter UI</text>
+  <text x="615" y="422" font-size="8" fill="#7C3AED">stream done → pendingApprovals → Approve → ACCEPT_SUGGESTION</text>
+
+  <!-- ACCEPT_SUGGESTION → LexicalEditor remount annotation -->
+  <text x="185" y="410" font-size="8" fill="#7C3AED">ACCEPT_SUGGESTION → section.body update → externalVersion++ → LexicalEditor remounts</text>
+
+</svg>

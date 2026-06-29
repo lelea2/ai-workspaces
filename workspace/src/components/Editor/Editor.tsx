@@ -212,12 +212,31 @@ function SectionRow({
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const composeRef = useRef<HTMLTextAreaElement>(null)
 
+  // Tracks the body last emitted by the editor's own onChange so we can
+  // distinguish user edits (section.body === lastEditorBody) from external
+  // updates like accepted AI suggestions (section.body !== lastEditorBody).
+  const lastEditorBodyRef = useRef<string>(section.body)
+  // Bumped on external updates to force the LexicalEditor to remount and
+  // load the new body via InitializerPlugin.
+  const [externalVersion, setExternalVersion] = useState(0)
+  const skipFirstBodyEffect = useRef(true)
+
+  useEffect(() => {
+    if (skipFirstBodyEffect.current) { skipFirstBodyEffect.current = false; return }
+    if (section.body !== lastEditorBodyRef.current) {
+      // Body was changed externally (e.g. AI suggestion accepted) — remount editor
+      lastEditorBodyRef.current = section.body
+      setExternalVersion((v) => v + 1)
+    }
+  }, [section.body])
+
   useEffect(() => {
     if (composing) composeRef.current?.focus()
   }, [composing])
 
   // Debounced save — fires 600ms after the user stops typing
   const handleBodyChange = useCallback((json: string) => {
+    lastEditorBodyRef.current = json  // record what the editor emitted
     if (saveTimer.current) clearTimeout(saveTimer.current)
     saveTimer.current = setTimeout(() => {
       dispatch({ type: 'EDIT_SECTION', docId, sectionId: section.id, body: json })
@@ -260,6 +279,7 @@ function SectionRow({
       <div className="flex-1 min-w-0">
         <h2 className="text-base font-semibold text-gray-900 mb-2">{section.heading}</h2>
         <LexicalEditor
+          key={`${section.id}-${externalVersion}`}
           sectionId={section.id}
           body={section.body}
           onChange={handleBodyChange}
