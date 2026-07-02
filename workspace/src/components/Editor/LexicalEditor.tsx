@@ -274,13 +274,14 @@ export default function LexicalEditor({
             <ContentEditable
               className="w-full text-sm text-gray-700 leading-relaxed outline-none min-h-[4rem] px-2 py-1.5 rounded-md border border-transparent focus:border-blue-300 focus:bg-blue-50/30 hover:border-gray-200 transition-colors"
               aria-placeholder={placeholder}
+              placeholder={
+                <div className="absolute top-1.5 left-2 text-sm text-gray-300 pointer-events-none select-none">
+                  {placeholder}
+                </div>
+              }
             />
           }
-          placeholder={
-            <div className="absolute top-1.5 left-2 text-sm text-gray-300 pointer-events-none select-none">
-              {placeholder}
-            </div>
-          }
+          placeholder={null}
           ErrorBoundary={LexicalErrorBoundary}
         />
         <HistoryPlugin />

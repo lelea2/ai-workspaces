@@ -1,0 +1,14 @@
+# Dependencies — rebuilt inside Docker
+node_modules
+workspace/node_modules
+
+# Build outputs — produced inside Docker
+dist-server
+workspace/dist
+
+# Secrets — injected at runtime via env_file or -e flags
+.env
+
+# Noise
+*.log
+.git

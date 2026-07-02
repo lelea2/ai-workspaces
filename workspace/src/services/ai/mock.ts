@@ -1,5 +1,5 @@
 import type { Comment, Document, Section, Suggestion } from '../../types'
-import type { AIService, FixCommentResult, ReviewResult } from './types'
+import type { AIService, ApplySuggestionResult, FixCommentResult, ReviewResult } from './types'
 import { extractPlainText } from '../../utils/lexical'
 
 const AGENT_STYLE: Record<string, { color: string }> = {
@@ -140,6 +140,22 @@ export class MockAIService implements AIService {
     ]
 
     return { comments, suggestions }
+  }
+
+  async applySuggestion(
+    section: Section,
+    suggestion: Suggestion,
+    onChunk: (chunk: string) => void,
+  ): Promise<ApplySuggestionResult> {
+    const plain = extractPlainText(section.body)
+    const result = plain.includes(suggestion.originalText)
+      ? plain.replace(suggestion.originalText, suggestion.suggestedText)
+      : plain + '\n\n' + suggestion.suggestedText
+    const tokens = result.split(/(\s+)/)
+    for (const token of tokens) {
+      if (token) { onChunk(token); await sleep(18) }
+    }
+    return { sectionId: section.id, body: result }
   }
 
   async fixComment(section: Section, comment: Comment): Promise<FixCommentResult> {
