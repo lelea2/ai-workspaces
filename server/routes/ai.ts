@@ -1,7 +1,7 @@
 import { Router } from 'express'
 import { openai } from '../openai.js'
-import { getDraftSystemPrompt, getReviewSystemPrompt, getApplySuggestionSystemPrompt } from '../prompts.js'
-import { mockDraft, mockReview, mockApplySuggestion } from '../mock.js'
+import { getDraftSystemPrompt, getReviewSystemPrompt, getApplySuggestionSystemPrompt, getFixCommentSystemPrompt } from '../prompts.js'
+import { mockDraft, mockReview, mockApplySuggestion, mockFixComment } from '../mock.js'
 import { extractPlainText } from '../lexical.js'
 
 const USE_MOCK = process.env.MOCK_AI === 'true'
@@ -156,6 +156,80 @@ aiRouter.post('/apply-suggestion', async (req, res) => {
     console.error(`[ai] apply-suggestion  status=500  error=${message}`)
     if (!res.headersSent) res.status(500).json({ error: message })
     else res.end()
+  }
+})
+
+// ── POST /api/ai/fix-comment ─────────────────────────────────────────────────
+// Given a comment and its section, asks AI to identify the relevant text span
+// and propose a replacement. Returns { originalText, suggestedText } as JSON.
+// The client then feeds this into the apply-suggestion SSE flow for streaming
+// preview + user approval before the document actually changes.
+
+type FixCommentPayload = {
+  section: { id: string; heading: string; body: string }
+  comment: { id: string; text: string; sectionId: string }
+}
+
+aiRouter.post('/fix-comment', async (req, res) => {
+  const { section, comment } = req.body as Partial<FixCommentPayload>
+  if (!section?.id || !comment?.text) {
+    res.status(400).json({ error: 'section and comment are required' })
+    return
+  }
+
+  const plainBody = extractPlainText(section.body ?? '')
+  const provider = USE_MOCK ? 'mock' : 'openai'
+  console.log(`[ai] provider=${provider}  op=fix-comment  section="${section.heading}"`)
+
+  if (USE_MOCK) {
+    const result = mockFixComment(plainBody, comment.text)
+    res.json(result)
+    return
+  }
+
+  try {
+    const completion = await openai.chat.completions.create({
+      model: 'gpt-4o',
+      temperature: 0.3,
+      response_format: { type: 'json_object' },
+      messages: [
+        { role: 'system', content: getFixCommentSystemPrompt() },
+        {
+          role: 'user',
+          content: [
+            `Section heading (context only — do not include in output): "${section.heading}"`,
+            '',
+            'Section body:',
+            '"""',
+            plainBody,
+            '"""',
+            '',
+            `Reviewer comment to address: "${comment.text}"`,
+          ].join('\n'),
+        },
+      ],
+    })
+    const raw = completion.choices[0].message.content?.trim() ?? '{}'
+    const parsed = JSON.parse(stripFences(raw)) as { originalText?: string; suggestedText?: string }
+
+    // Validate that originalText is actually present verbatim in the body
+    if (parsed.originalText && parsed.suggestedText && plainBody.includes(parsed.originalText)) {
+      console.log(`[ai] fix-comment  section="${section.heading}"  status=200`)
+      res.json({ originalText: parsed.originalText, suggestedText: parsed.suggestedText })
+      return
+    }
+
+    // Fallback: use first sentence if model returned an invalid span
+    console.warn(`[ai] fix-comment  originalText not found verbatim — using fallback`)
+    const firstSentenceEnd = plainBody.search(/[.!?]\s/)
+    const fallbackOriginal = firstSentenceEnd > -1
+      ? plainBody.slice(0, firstSentenceEnd + 1)
+      : plainBody.slice(0, Math.min(100, plainBody.length))
+    res.json({ originalText: fallbackOriginal, suggestedText: parsed.suggestedText ?? fallbackOriginal })
+  } catch (err) {
+    const message = err instanceof Error ? err.message : 'Fix comment failed'
+    console.error(`[ai] fix-comment  status=500  error=${message}`)
+    res.status(500).json({ error: message })
   }
 })
 

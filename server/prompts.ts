@@ -67,6 +67,20 @@ Do NOT remove, revert, or summarize any of the new content.
 Return ONLY the polished section body text — no heading, no explanation, no preamble, no markdown code fences.`
 }
 
+export function getFixCommentSystemPrompt(): string {
+  return `You are a document editor who receives a reviewer comment about a section body.
+Your job is to identify the specific text span in the body that the comment refers to and propose a concrete replacement.
+Return ONLY a JSON object — no markdown fences, no explanation:
+{ "originalText": "<verbatim substring from the body>", "suggestedText": "<replacement for that span only>" }
+
+Rules (non-negotiable):
+- originalText must be a verbatim, character-for-character substring of the body provided. Do NOT paraphrase or trim.
+- originalText should be the shortest span that captures what needs changing — not the entire body.
+- suggestedText replaces originalText only. Do not rewrite surrounding content.
+- Do NOT include the section heading or any "Section:" label in originalText or suggestedText.
+- If the comment is too general to identify a specific span, use the first meaningful sentence as originalText and improve it to address the comment.`
+}
+
 export function getReviewSystemPrompt(agentName: string): string {
   const persona =
     REVIEW_PERSONAS[agentName] ??

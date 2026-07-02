@@ -10,6 +10,11 @@ export interface ApplySuggestionResult {
   body: string
 }
 
+export interface FixCommentResult {
+  originalText: string
+  suggestedText: string
+}
+
 export interface AIService {
   generateDraft(prompt: string): Promise<Section[]>
   reviewDocument(doc: Document, agentName: string): Promise<ReviewResult>
@@ -18,4 +23,5 @@ export interface AIService {
     suggestion: Suggestion,
     onChunk: (chunk: string) => void,
   ): Promise<ApplySuggestionResult>
+  fixComment(section: Section, comment: Comment): Promise<FixCommentResult>
 }

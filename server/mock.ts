@@ -82,6 +82,18 @@ function commentForSection(section: Section, agentName: string): string {
   return 'Consider adding concrete examples or references to strengthen this section\'s credibility.'
 }
 
+export function mockFixComment(
+  plainBody: string,
+  commentText: string,
+): { originalText: string; suggestedText: string } {
+  const firstSentenceEnd = plainBody.search(/[.!?]\s/)
+  const originalText = firstSentenceEnd > -1
+    ? plainBody.slice(0, firstSentenceEnd + 1)
+    : plainBody.slice(0, Math.min(80, plainBody.length))
+  const note = commentText.slice(0, 40).trim().replace(/[.!?]*$/, '')
+  return { originalText, suggestedText: originalText + ` [Addressed: ${note}.]` }
+}
+
 export function mockApplySuggestion(
   _plainBody: string,
   _originalText: string,

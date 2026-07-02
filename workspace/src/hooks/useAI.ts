@@ -1,6 +1,7 @@
 import { getAIService } from '../services/ai'
 import { useDocument } from './useDocument'
-import type { Suggestion } from '../types'
+import { extractPlainText, isLexicalJson, plainTextToLexicalJson } from '../utils/lexical'
+import type { Comment, Suggestion } from '../types'
 
 export function useAI() {
   const { activeDocument, dispatch } = useDocument()
@@ -56,5 +57,45 @@ export function useAI() {
     dispatch({ type: 'ACCEPT_SUGGESTION', docId: activeDocument.id, suggestionId: suggestion.id, aiBody })
   }
 
-  return { generateDraft, runReview, acceptSuggestion, applyAcceptedSuggestion }
+  // Step 1 of "Fix by Agent": call fix-comment to identify the span, then stream
+  // the polished body via apply-suggestion SSE. Returns { sectionId, originalBody,
+  // aiBody } so the caller can show a diff before committing anything.
+  async function fixCommentByAgent(
+    comment: Comment,
+    onChunk: (chunk: string) => void,
+  ): Promise<{ sectionId: string; originalBody: string; aiBody: string } | undefined> {
+    if (!activeDocument) return undefined
+    const section = activeDocument.sections.find((s) => s.id === comment.sectionId)
+    if (!section) return undefined
+    const originalBody = extractPlainText(section.body)
+    try {
+      const fix = await getAIService().fixComment(section, comment)
+      const syntheticSuggestion: Suggestion = {
+        id: `comment-fix-${comment.id}`,
+        sectionId: comment.sectionId,
+        sectionTitle: section.heading,
+        originalText: fix.originalText,
+        suggestedText: fix.suggestedText,
+        reason: comment.text,
+        status: 'pending',
+        createdAt: new Date().toISOString(),
+      }
+      const result = await getAIService().applySuggestion(section, syntheticSuggestion, onChunk)
+      return result.body ? { sectionId: comment.sectionId, originalBody, aiBody: result.body } : undefined
+    } catch {
+      return undefined
+    }
+  }
+
+  // Step 2: commit an approved comment fix to the document and resolve the comment.
+  function applyCommentFix(comment: Comment, sectionId: string, aiBody: string) {
+    if (!activeDocument) return
+    const section = activeDocument.sections.find((s) => s.id === sectionId)
+    if (!section) return
+    const newBody = isLexicalJson(section.body) ? plainTextToLexicalJson(aiBody) : aiBody
+    dispatch({ type: 'EDIT_SECTION', docId: activeDocument.id, sectionId, body: newBody })
+    dispatch({ type: 'RESOLVE_COMMENT', docId: activeDocument.id, commentId: comment.id })
+  }
+
+  return { generateDraft, runReview, acceptSuggestion, applyAcceptedSuggestion, fixCommentByAgent, applyCommentFix }
 }

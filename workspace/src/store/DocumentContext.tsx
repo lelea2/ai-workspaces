@@ -125,7 +125,7 @@ export function DocumentProvider({ children }: { children: ReactNode }) {
         dataService.createDocument(doc).catch((err) =>
           console.error(`[data] POST /documents failed: ${err instanceof Error ? err.message : err}`)
         )
-      } else if (prevDoc !== doc) {
+      } else if (prevDoc.updatedAt !== doc.updatedAt) {
         dataService.updateDocument(doc.id, doc).catch((err) => {
           const msg = err instanceof Error ? err.message : String(err)
           if (msg.includes('not found')) {

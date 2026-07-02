@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { useDocument } from '../../hooks/useDocument'
+import { useUI } from '../../store/UIContext'
 import { formatRelativeTime } from '../../utils/time'
 import { extractPlainText } from '../../utils/lexical'
 import LexicalEditor from './LexicalEditor'
@@ -49,6 +50,7 @@ function CommentBubble({
   onResolve: () => void
   onReply: (text: string) => void
 }) {
+  const { openPanel, focusComment } = useUI()
   const [replying, setReplying] = useState(false)
   const [replyText, setReplyText] = useState('')
   const replyRef = useRef<HTMLTextAreaElement>(null)
@@ -168,24 +170,39 @@ function CommentBubble({
 
       {/* Action buttons */}
       {expanded && !replying && (
-        <div className="mt-1 flex gap-1.5 px-1">
-          <button
-            onClick={() => setReplying(true)}
-            className="text-[11px] text-blue-600 hover:underline font-medium"
-          >
-            Reply
-          </button>
+        <div className="mt-1 px-1 space-y-1">
+          <div className="flex gap-1.5">
+            <button
+              onClick={() => setReplying(true)}
+              className="text-[11px] text-blue-600 hover:underline font-medium"
+            >
+              Reply
+            </button>
+            <button
+              onClick={(e) => {
+                e.stopPropagation()
+                onResolve()
+              }}
+              className="ml-auto text-[11px] font-medium text-gray-500 hover:text-green-600 flex items-center gap-0.5 transition-colors"
+            >
+              <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
+                <path d="M2 5l2.5 2.5L8 3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+              Resolve
+            </button>
+          </div>
           <button
             onClick={(e) => {
               e.stopPropagation()
-              onResolve()
+              openPanel()
+              focusComment(comment.id)
             }}
-            className="ml-auto text-[11px] font-medium text-gray-500 hover:text-green-600 flex items-center gap-0.5 transition-colors"
+            className="w-full flex items-center justify-center gap-1 py-1 text-[11px] font-medium text-indigo-600 bg-indigo-50 hover:bg-indigo-100 rounded-md transition-colors"
           >
             <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
-              <path d="M2 5l2.5 2.5L8 3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+              <path d="M5 1v2M5 7v2M1 5h2M7 5h2M2.5 2.5l1.5 1.5M6 6l1.5 1.5M2.5 7.5L4 6M6 4l1.5-1.5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
             </svg>
-            Resolve
+            Fix by Agent
           </button>
         </div>
       )}

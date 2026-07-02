@@ -1,5 +1,5 @@
-import type { Document, Section, Suggestion } from '../../types'
-import type { AIService, ReviewResult, ApplySuggestionResult } from './types'
+import type { Comment, Document, Section, Suggestion } from '../../types'
+import type { AIService, ReviewResult, ApplySuggestionResult, FixCommentResult } from './types'
 
 export class ProxyAIService implements AIService {
   async generateDraft(prompt: string): Promise<Section[]> {
@@ -70,5 +70,18 @@ export class ProxyAIService implements AIService {
     }
 
     return { sectionId: section.id, body: accumulated }
+  }
+
+  async fixComment(section: Section, comment: Comment): Promise<FixCommentResult> {
+    const res = await fetch('/api/ai/fix-comment', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ section, comment }),
+    })
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ error: res.statusText })) as { error?: string }
+      throw new Error(err.error ?? 'Fix comment failed')
+    }
+    return res.json() as Promise<FixCommentResult>
   }
 }

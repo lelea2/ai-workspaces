@@ -1,5 +1,6 @@
 import type { Comment, Document, Section, Suggestion } from '../../types'
-import type { AIService, ReviewResult } from './types'
+import type { AIService, FixCommentResult, ReviewResult } from './types'
+import { extractPlainText } from '../../utils/lexical'
 
 const AGENT_STYLE: Record<string, { color: string }> = {
   'Drafting Agent': { color: '#10b981' },
@@ -139,5 +140,16 @@ export class MockAIService implements AIService {
     ]
 
     return { comments, suggestions }
+  }
+
+  async fixComment(section: Section, comment: Comment): Promise<FixCommentResult> {
+    await sleep(600)
+    const plain = extractPlainText(section.body)
+    const firstSentenceEnd = plain.search(/[.!?]\s/)
+    const originalText = firstSentenceEnd > -1
+      ? plain.slice(0, firstSentenceEnd + 1)
+      : plain.slice(0, Math.min(80, plain.length))
+    const note = comment.text.slice(0, 40).trim().replace(/[.!?]*$/, '')
+    return { originalText, suggestedText: `${originalText} [Addressed: ${note}.]` }
   }
 }

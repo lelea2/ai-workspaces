@@ -190,16 +190,33 @@ function CommentItem({
   comment,
   docId,
   dispatch,
+  isFixing = false,
+  streamingBody,
+  pendingFix,
+  onFixByAgent,
+  onApproveFix,
+  onAbortFix,
 }: {
   comment: Comment
   docId: string
   dispatch: React.Dispatch<Action>
+  isFixing?: boolean
+  streamingBody?: string
+  pendingFix?: { sectionId: string; originalBody: string; newBody: string }
+  onFixByAgent?: () => void
+  onApproveFix?: () => void
+  onAbortFix?: () => void
 }) {
   const [expanded, setExpanded] = useState(false)
   const [replying, setReplying] = useState(false)
   const [replyText, setReplyText] = useState('')
   const replyRef = useRef<HTMLTextAreaElement>(null)
   const replies = comment.replies ?? []
+
+  // Auto-expand when fix is in progress so the user can see the preview
+  useEffect(() => {
+    if (isFixing || pendingFix) setExpanded(true)
+  }, [isFixing, pendingFix])
 
   useEffect(() => {
     if (replying) replyRef.current?.focus()
@@ -228,8 +245,10 @@ function CommentItem({
     dispatch({ type: 'RESOLVE_COMMENT', docId, commentId: comment.id })
   }
 
+  const fixDiffChunks = pendingFix ? diffLines(pendingFix.originalBody, pendingFix.newBody) : []
+
   return (
-    <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
+    <div data-comment-id={comment.id} className="bg-white border border-gray-200 rounded-lg overflow-hidden">
       <button
         onClick={() => setExpanded((e) => !e)}
         className="w-full text-left p-3 hover:bg-gray-50 transition-colors"
@@ -281,6 +300,48 @@ function CommentItem({
             </div>
           )}
 
+          {/* Streaming preview — agent is generating the fix */}
+          {isFixing && (
+            <div className="px-3 py-2 border-b border-gray-100">
+              <p className="text-[10px] font-medium text-indigo-500 mb-1.5 flex items-center gap-1">
+                <Spinner />
+                Agent is writing a fix…
+              </p>
+              <div className="bg-indigo-50 border border-indigo-100 rounded-md px-2.5 py-2 text-xs text-indigo-800 leading-relaxed font-mono whitespace-pre-wrap min-h-10">
+                {streamingBody ?? ''}
+                <span className="inline-block w-0.5 h-3 bg-indigo-400 ml-0.5 animate-pulse align-text-bottom" />
+              </div>
+            </div>
+          )}
+
+          {/* Diff preview — awaiting user decision */}
+          {!isFixing && pendingFix && (
+            <div className="px-3 py-2 border-b border-gray-100">
+              <p className="text-[10px] font-medium text-gray-500 mb-1.5">Proposed change — review before applying:</p>
+              <div className="bg-gray-50 border border-gray-200 rounded-md px-2.5 py-2 text-[11px] font-mono leading-relaxed whitespace-pre-wrap max-h-40 overflow-y-auto">
+                {fixDiffChunks.map((chunk, i) => {
+                  if (chunk.type === 'equal') return <span key={i} className="text-gray-500">{chunk.text}</span>
+                  if (chunk.type === 'delete') return <span key={i} className="bg-red-100 text-red-700 line-through">{chunk.text}</span>
+                  return <span key={i} className="bg-green-100 text-green-700">{chunk.text}</span>
+                })}
+              </div>
+              <div className="flex gap-1.5 mt-2">
+                <button
+                  onClick={onApproveFix}
+                  className="flex-1 py-1.5 text-[11px] font-medium text-white bg-green-600 rounded-md hover:bg-green-700 transition-colors"
+                >
+                  Apply fix
+                </button>
+                <button
+                  onClick={onAbortFix}
+                  className="flex-1 py-1.5 text-[11px] font-medium text-gray-600 bg-gray-100 rounded-md hover:bg-gray-200 transition-colors"
+                >
+                  Discard
+                </button>
+              </div>
+            </div>
+          )}
+
           {/* Reply compose */}
           {replying && (
             <div className="px-3 py-2 border-b border-gray-100">
@@ -312,13 +373,23 @@ function CommentItem({
           )}
 
           {/* Actions */}
-          {!replying && (
-            <div className="flex gap-2 px-3 py-1.5">
+          {!replying && !isFixing && !pendingFix && (
+            <div className="flex items-center gap-2 px-3 py-1.5">
               <button
                 onClick={() => setReplying(true)}
                 className="text-[11px] text-blue-600 hover:underline font-medium"
               >
                 Reply
+              </button>
+              <button
+                onClick={onFixByAgent}
+                disabled={isFixing}
+                className="text-[11px] text-indigo-600 hover:underline font-medium flex items-center gap-0.5 disabled:opacity-40"
+              >
+                <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
+                  <path d="M5 1v2M5 7v2M1 5h2M7 5h2M2.5 2.5l1.5 1.5M6 6l1.5 1.5M2.5 7.5L4 6M6 4l1.5-1.5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
+                </svg>
+                Fix by Agent
               </button>
               <button
                 onClick={handleResolve}
@@ -401,8 +472,8 @@ function Spinner() {
 
 export default function AIPanel() {
   const { activeDocument, isGenerating, isReviewing, dispatch } = useDocument()
-  const { generateDraft, runReview, acceptSuggestion, applyAcceptedSuggestion } = useAI()
-  const { panelOpen } = useUI()
+  const { generateDraft, runReview, acceptSuggestion, applyAcceptedSuggestion, fixCommentByAgent, applyCommentFix } = useAI()
+  const { panelOpen, focusCommentId, clearFocusComment } = useUI()
 
   const [agents, setAgents] = useState<AgentConfig[]>([])
   const [activeAgentId, setActiveAgentId] = useState('reviewer')
@@ -412,6 +483,14 @@ export default function AIPanel() {
   const [streamingContents, setStreamingContents] = useState<Map<string, string>>(new Map())
   // suggestionId → final AI body awaiting user approval (diff shown, not yet committed)
   const [pendingApprovals, setPendingApprovals] = useState<Map<string, string>>(new Map())
+  // commentId → in-progress "Fix by Agent" state
+  const [fixingCommentIds, setFixingCommentIds] = useState<Set<string>>(new Set())
+  const [commentStreamingContents, setCommentStreamingContents] = useState<Map<string, string>>(new Map())
+  // commentId → { sectionId, originalBody, newBody } awaiting approval
+  const [commentPendingFixes, setCommentPendingFixes] = useState<Map<string, { sectionId: string; originalBody: string; newBody: string }>>(new Map())
+  // Set when a comment focus arrives from the editor bubble; consumed once Comments tab renders
+  const [pendingFocusCommentId, setPendingFocusCommentId] = useState<string | null>(null)
+  const commentsListRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     dataService.getAgents().then((list) => {
@@ -423,6 +502,36 @@ export default function AIPanel() {
       }
     }).catch(() => {})
   }, [])
+
+  // Step 1: incoming focus from editor bubble → switch to Comments tab and store id
+  useEffect(() => {
+    if (!focusCommentId) return
+    setActiveTab('comments')
+    setPendingFocusCommentId(focusCommentId)
+    clearFocusComment()
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [focusCommentId])
+
+  // Step 2: once Comments tab is active and we have a pending focus, scroll + trigger
+  useEffect(() => {
+    if (activeTab !== 'comments' || !pendingFocusCommentId) return
+    setPendingFocusCommentId(null)
+
+    // Scroll the comment card into view after paint
+    requestAnimationFrame(() => {
+      const el = commentsListRef.current?.querySelector(`[data-comment-id="${pendingFocusCommentId}"]`)
+      el?.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
+    })
+
+    // Auto-trigger Fix by Agent for this comment
+    const comment = activeDocument?.comments.find(
+      (c) => c.id === pendingFocusCommentId && c.status === 'open',
+    )
+    if (comment && !fixingCommentIds.has(comment.id) && !commentPendingFixes.has(comment.id)) {
+      void handleFixByAgent(comment)
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeTab, pendingFocusCommentId])
 
   if (!panelOpen) return null
 
@@ -491,6 +600,42 @@ export default function AIPanel() {
   function handleDismiss(suggestion: Suggestion) {
     if (!activeDocument) return
     dispatch({ type: 'REJECT_SUGGESTION', docId: activeDocument.id, suggestionId: suggestion.id })
+  }
+
+  async function handleFixByAgent(comment: Comment) {
+    if (fixingCommentIds.has(comment.id) || commentPendingFixes.has(comment.id)) return
+    setFixingCommentIds((prev) => new Set(prev).add(comment.id))
+    setCommentStreamingContents((prev) => { const m = new Map(prev); m.set(comment.id, ''); return m })
+    try {
+      const result = await fixCommentByAgent(comment, (chunk) => {
+        setCommentStreamingContents((prev) => {
+          const m = new Map(prev)
+          m.set(comment.id, (m.get(comment.id) ?? '') + chunk)
+          return m
+        })
+      })
+      if (result) {
+        setCommentPendingFixes((prev) => {
+          const m = new Map(prev)
+          m.set(comment.id, { sectionId: result.sectionId, originalBody: result.originalBody, newBody: result.aiBody })
+          return m
+        })
+      }
+    } finally {
+      setFixingCommentIds((prev) => { const s = new Set(prev); s.delete(comment.id); return s })
+      setCommentStreamingContents((prev) => { const m = new Map(prev); m.delete(comment.id); return m })
+    }
+  }
+
+  function handleApproveCommentFix(comment: Comment) {
+    const fix = commentPendingFixes.get(comment.id)
+    if (!fix) return
+    setCommentPendingFixes((prev) => { const m = new Map(prev); m.delete(comment.id); return m })
+    applyCommentFix(comment, fix.sectionId, fix.newBody)
+  }
+
+  function handleAbortCommentFix(comment: Comment) {
+    setCommentPendingFixes((prev) => { const m = new Map(prev); m.delete(comment.id); return m })
   }
 
   const canSubmit = !!activeDocument && !isLoading && !!prompt.trim() && !!activeAgent
@@ -634,7 +779,7 @@ export default function AIPanel() {
         )}
 
         {activeTab === 'comments' && (
-          <div className="space-y-2">
+          <div className="space-y-2" ref={commentsListRef}>
             {openComments.length === 0 ? (
               <div className="flex flex-col items-center justify-center h-32 text-center">
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" className="text-gray-300 mb-2">
@@ -649,6 +794,12 @@ export default function AIPanel() {
                   comment={comment}
                   docId={activeDocument!.id}
                   dispatch={dispatch}
+                  isFixing={fixingCommentIds.has(comment.id)}
+                  streamingBody={commentStreamingContents.get(comment.id)}
+                  pendingFix={commentPendingFixes.get(comment.id)}
+                  onFixByAgent={() => handleFixByAgent(comment)}
+                  onApproveFix={() => handleApproveCommentFix(comment)}
+                  onAbortFix={() => handleAbortCommentFix(comment)}
                 />
               ))
             )}
