@@ -1,0 +1,21 @@
+[    1909ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ webpack-internal:///./node_modules/react-dom/cjs/react-dom-client.development.js:28003
+[   43091ms] [ERROR] WebSocket connection to 'ws://localhost:3000/ws' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED @ webpack-internal:///./node_modules/webpack-dev-server/client/clients/WebSocketClient.js:24
+[   43091ms] [ERROR] [webpack-dev-server] Event @ webpack-internal:///./node_modules/webpack-dev-server/client/modules/logger/index.js:607
+[   45133ms] [ERROR] WebSocket connection to 'ws://localhost:3000/ws' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED @ webpack-internal:///./node_modules/webpack-dev-server/client/clients/WebSocketClient.js:24
+[   45133ms] [ERROR] [webpack-dev-server] Event @ webpack-internal:///./node_modules/webpack-dev-server/client/modules/logger/index.js:607
+[   49193ms] [ERROR] WebSocket connection to 'ws://localhost:3000/ws' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED @ webpack-internal:///./node_modules/webpack-dev-server/client/clients/WebSocketClient.js:24
+[   49193ms] [ERROR] [webpack-dev-server] Event @ webpack-internal:///./node_modules/webpack-dev-server/client/modules/logger/index.js:607
+[   57220ms] [ERROR] WebSocket connection to 'ws://localhost:3000/ws' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED @ webpack-internal:///./node_modules/webpack-dev-server/client/clients/WebSocketClient.js:24
+[   57220ms] [ERROR] [webpack-dev-server] Event @ webpack-internal:///./node_modules/webpack-dev-server/client/modules/logger/index.js:607
+[   73318ms] [ERROR] WebSocket connection to 'ws://localhost:3000/ws' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED @ webpack-internal:///./node_modules/webpack-dev-server/client/clients/WebSocketClient.js:24
+[   73318ms] [ERROR] [webpack-dev-server] Event @ webpack-internal:///./node_modules/webpack-dev-server/client/modules/logger/index.js:607
+[  105368ms] [ERROR] WebSocket connection to 'ws://localhost:3000/ws' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED @ webpack-internal:///./node_modules/webpack-dev-server/client/clients/WebSocketClient.js:24
+[  105368ms] [ERROR] [webpack-dev-server] Event @ webpack-internal:///./node_modules/webpack-dev-server/client/modules/logger/index.js:607
+[  169472ms] [ERROR] WebSocket connection to 'ws://localhost:3000/ws' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED @ webpack-internal:///./node_modules/webpack-dev-server/client/clients/WebSocketClient.js:24
+[  169472ms] [ERROR] [webpack-dev-server] Event @ webpack-internal:///./node_modules/webpack-dev-server/client/modules/logger/index.js:607
+[  297488ms] [ERROR] WebSocket connection to 'ws://localhost:3000/ws' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED @ webpack-internal:///./node_modules/webpack-dev-server/client/clients/WebSocketClient.js:24
+[  297488ms] [ERROR] [webpack-dev-server] Event @ webpack-internal:///./node_modules/webpack-dev-server/client/modules/logger/index.js:607
+[  553535ms] [ERROR] WebSocket connection to 'ws://localhost:3000/ws' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED @ webpack-internal:///./node_modules/webpack-dev-server/client/clients/WebSocketClient.js:24
+[  553536ms] [ERROR] [webpack-dev-server] Event @ webpack-internal:///./node_modules/webpack-dev-server/client/modules/logger/index.js:607
+[ 1065544ms] [ERROR] WebSocket connection to 'ws://localhost:3000/ws' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED @ webpack-internal:///./node_modules/webpack-dev-server/client/clients/WebSocketClient.js:24
+[ 1065544ms] [ERROR] [webpack-dev-server] Event @ webpack-internal:///./node_modules/webpack-dev-server/client/modules/logger/index.js:607
