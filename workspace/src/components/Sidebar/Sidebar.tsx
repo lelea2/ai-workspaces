@@ -2,9 +2,10 @@ import { useState, useEffect, useRef } from 'react'
 import { createPortal } from 'react-dom'
 import { useDocument } from '../../hooks/useDocument'
 import { useUI } from '../../store/UIContext'
+import { useUser } from '../../store/UserContext'
 import { formatRelativeTime } from '../../utils/time'
 import { dataService } from '../../services/data/dataService'
-import type { DocumentStatus, Section } from '../../types'
+import type { DocumentStatus, Section, User } from '../../types'
 
 const STATUS_COLORS: Record<DocumentStatus, string> = {
   reviewing: 'bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-400',
@@ -28,6 +29,7 @@ function DocIcon({ active }: { active: boolean }) {
 export default function Sidebar() {
   const { documents, activeDocumentId, dispatch } = useDocument()
   const { sidebarOpen } = useUI()
+  const { currentUser, allUsers, logout } = useUser()
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState<DocumentStatus | null>(null)
   const [templatesOpen, setTemplatesOpen] = useState(true)
@@ -94,21 +96,31 @@ export default function Sidebar() {
 
   if (!sidebarOpen) return null
 
-  const filtered = documents.filter((d) => {
+  // Only show docs the current user owns or has been explicitly shared with
+  const accessibleDocs = currentUser
+    ? documents.filter((d) =>
+        d.ownerId === currentUser.id ||
+        (d.sharedWith ?? []).includes(currentUser.id),
+      )
+    : documents
+
+  const filtered = accessibleDocs.filter((d) => {
     if (!d.title.toLowerCase().includes(search.toLowerCase())) return false
     if (statusFilter && d.status !== statusFilter) return false
     return true
   })
 
-  const countByStatus = (s: DocumentStatus) => documents.filter((d) => d.status === s).length
+  const countByStatus = (s: DocumentStatus) => accessibleDocs.filter((d) => d.status === s).length
+
+  const actor = currentUser ?? undefined
 
   function handleNewDocument() {
-    dispatch({ type: 'CREATE_DOCUMENT', title: 'Untitled Document', sections: [] })
+    dispatch({ type: 'CREATE_DOCUMENT', title: 'Untitled Document', sections: [], actor })
   }
 
   async function handleTemplateClick(templateId: string, templateName: string) {
     const sections = await dataService.buildTemplateSections(templateId)
-    dispatch({ type: 'CREATE_DOCUMENT', title: `New ${templateName}`, sections })
+    dispatch({ type: 'CREATE_DOCUMENT', title: `New ${templateName}`, sections, actor })
   }
 
   function handleDeleteConfirmed(docId: string) {
@@ -248,6 +260,17 @@ export default function Sidebar() {
                                 {doc.status}
                               </span>
                               <span className="text-[10px] text-gray-400 dark:text-gray-600">{formatRelativeTime(doc.updatedAt)}</span>
+                              {/* Owner avatar when shared with current user */}
+                              {doc.ownerId && doc.ownerId !== currentUser?.id && (() => {
+                                const owner = allUsers.find((u: User) => u.id === doc.ownerId)
+                                return owner ? (
+                                  <div
+                                    className="w-4 h-4 rounded-full flex items-center justify-center text-[8px] font-bold text-white shrink-0"
+                                    style={{ backgroundColor: owner.color }}
+                                    title={`Owned by ${owner.name}`}
+                                  >{owner.initial}</div>
+                                ) : null
+                              })()}
                             </div>
                           </div>
                         </div>
@@ -419,18 +442,33 @@ export default function Sidebar() {
       )}
 
       {/* User footer */}
-      <div className="px-3 py-2 border-t border-gray-100 dark:border-gray-800 flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <div className="w-7 h-7 rounded-full bg-indigo-500 flex items-center justify-center text-xs font-semibold text-white">K</div>
-          <span className="text-xs font-medium text-gray-700 dark:text-gray-300">Khanh</span>
+      {currentUser && (
+        <div className="px-3 py-2 border-t border-gray-100 dark:border-gray-800 flex items-center justify-between">
+          <div className="flex items-center gap-2 min-w-0">
+            <div
+              className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-semibold text-white shrink-0"
+              style={{ backgroundColor: currentUser.color }}
+            >
+              {currentUser.initial}
+            </div>
+            <div className="min-w-0">
+              <p className="text-xs font-medium text-gray-700 dark:text-gray-300 truncate">{currentUser.name}</p>
+              <p className="text-[10px] text-gray-400 dark:text-gray-600">
+                {accessibleDocs.length} doc{accessibleDocs.length !== 1 ? 's' : ''}
+              </p>
+            </div>
+          </div>
+          <button
+            onClick={logout}
+            title="Switch user"
+            className="p-1 text-gray-400 dark:text-gray-600 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-md transition-colors"
+          >
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+              <path d="M5 2H2.5A1.5 1.5 0 0 0 1 3.5v7A1.5 1.5 0 0 0 2.5 12H5M9.5 9.5L13 7l-3.5-2.5M13 7H5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          </button>
         </div>
-        <button className="p-1 text-gray-400 dark:text-gray-600 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-md transition-colors">
-          <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-            <circle cx="7" cy="7" r="2" stroke="currentColor" strokeWidth="1.2" />
-            <path d="M7 1v1.5M7 11.5V13M1 7h1.5M11.5 7H13M2.93 2.93l1.06 1.06M10.01 10.01l1.06 1.06M2.93 11.07l1.06-1.06M10.01 3.99l1.06-1.06" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
-          </svg>
-        </button>
-      </div>
+      )}
     </aside>
   )
 }

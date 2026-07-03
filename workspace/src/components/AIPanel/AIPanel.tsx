@@ -1,9 +1,10 @@
 import { useState, useRef, useEffect } from 'react'
 import { useDocument } from '../../hooks/useDocument'
 import { dataService } from '../../services/data/dataService'
-import type { AgentConfig } from '../../types'
+import type { AgentConfig, UserActor } from '../../types'
 import { useAI } from '../../hooks/useAI'
 import { useUI } from '../../store/UIContext'
+import { useUser } from '../../store/UserContext'
 import { formatRelativeTime } from '../../utils/time'
 import type { Suggestion, Comment } from '../../types'
 import type { Action } from '../../store/actions'
@@ -190,6 +191,7 @@ function CommentItem({
   comment,
   docId,
   dispatch,
+  actor,
   isFixing = false,
   streamingBody,
   pendingFix,
@@ -200,6 +202,7 @@ function CommentItem({
   comment: Comment
   docId: string
   dispatch: React.Dispatch<Action>
+  actor?: UserActor
   isFixing?: boolean
   streamingBody?: string
   pendingFix?: { sectionId: string; originalBody: string; newBody: string }
@@ -225,7 +228,7 @@ function CommentItem({
   function handlePostReply() {
     const trimmed = replyText.trim()
     if (!trimmed) return
-    dispatch({ type: 'REPLY_TO_COMMENT', docId, commentId: comment.id, text: trimmed })
+    dispatch({ type: 'REPLY_TO_COMMENT', docId, commentId: comment.id, text: trimmed, actor })
     setReplyText('')
     setReplying(false)
   }
@@ -242,7 +245,7 @@ function CommentItem({
   }
 
   function handleResolve() {
-    dispatch({ type: 'RESOLVE_COMMENT', docId, commentId: comment.id })
+    dispatch({ type: 'RESOLVE_COMMENT', docId, commentId: comment.id, actor })
   }
 
   const fixDiffChunks = pendingFix ? diffLines(pendingFix.originalBody, pendingFix.newBody) : []
@@ -474,6 +477,8 @@ export default function AIPanel() {
   const { activeDocument, isGenerating, isReviewing, dispatch } = useDocument()
   const { generateDraft, runReview, acceptSuggestion, applyAcceptedSuggestion, fixCommentByAgent, applyCommentFix } = useAI()
   const { panelOpen, focusCommentId, clearFocusComment } = useUI()
+  const { currentUser } = useUser()
+  const actor = currentUser ?? undefined
 
   const [agents, setAgents] = useState<AgentConfig[]>([])
   const [activeAgentId, setActiveAgentId] = useState('reviewer')
@@ -599,7 +604,7 @@ export default function AIPanel() {
 
   function handleDismiss(suggestion: Suggestion) {
     if (!activeDocument) return
-    dispatch({ type: 'REJECT_SUGGESTION', docId: activeDocument.id, suggestionId: suggestion.id })
+    dispatch({ type: 'REJECT_SUGGESTION', docId: activeDocument.id, suggestionId: suggestion.id, actor })
   }
 
   async function handleFixByAgent(comment: Comment) {
@@ -794,6 +799,7 @@ export default function AIPanel() {
                   comment={comment}
                   docId={activeDocument!.id}
                   dispatch={dispatch}
+                  actor={actor}
                   isFixing={fixingCommentIds.has(comment.id)}
                   streamingBody={commentStreamingContents.get(comment.id)}
                   pendingFix={commentPendingFixes.get(comment.id)}

@@ -1,5 +1,19 @@
 export type DocumentStatus = 'draft' | 'reviewing' | 'approved'
 
+export type User = {
+  id: string
+  name: string
+  initial: string
+  color: string
+}
+
+export type UserActor = {
+  id: string
+  name: string
+  color: string
+  initial: string
+}
+
 export type Section = {
   id: string
   heading: string
@@ -43,6 +57,7 @@ export type Suggestion = {
 export type ActivityEvent = {
   id: string
   actor: string
+  actorId?: string
   actorType: 'human' | 'ai'
   actorColor: string
   actorInitial: string
@@ -54,6 +69,8 @@ export type ActivityEvent = {
 export type Document = {
   id: string
   title: string
+  ownerId?: string
+  sharedWith?: string[]
   sections: Section[]
   comments: Comment[]
   suggestions: Suggestion[]

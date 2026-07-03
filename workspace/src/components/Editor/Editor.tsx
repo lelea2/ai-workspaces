@@ -1,11 +1,12 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { useDocument } from '../../hooks/useDocument'
 import { useUI } from '../../store/UIContext'
+import { useUser } from '../../store/UserContext'
 import { formatRelativeTime } from '../../utils/time'
 import { extractPlainText } from '../../utils/lexical'
 import { dataService } from '../../services/data/dataService'
 import LexicalEditor from './LexicalEditor'
-import type { Comment, Section } from '../../types'
+import type { Comment, Section, UserActor } from '../../types'
 import type { Action } from '../../store/actions'
 
 // ---------- Generating skeleton ----------
@@ -44,12 +45,14 @@ function CommentBubble({
   onToggle,
   onResolve,
   onReply,
+  actor,
 }: {
   comment: Comment
   expanded: boolean
   onToggle: () => void
   onResolve: () => void
   onReply: (text: string) => void
+  actor?: UserActor
 }) {
   const { openPanel, focusComment } = useUI()
   const [replying, setReplying] = useState(false)
@@ -137,10 +140,13 @@ function CommentBubble({
       {expanded && replying && (
         <div className="mt-1.5 ml-1">
           <div className="flex items-center gap-1 mb-1">
-            <div className="w-4 h-4 rounded-full bg-indigo-500 flex items-center justify-center text-[8px] font-bold text-white shrink-0">
-              K
+            <div
+              className="w-4 h-4 rounded-full flex items-center justify-center text-[8px] font-bold text-white shrink-0"
+              style={{ backgroundColor: actor?.color ?? '#6366f1' }}
+            >
+              {actor?.initial ?? 'U'}
             </div>
-            <span className="text-[10px] text-gray-500 dark:text-gray-500">Replying as Khanh</span>
+            <span className="text-[10px] text-gray-500 dark:text-gray-500">Replying as {actor?.name ?? 'You'}</span>
           </div>
           <textarea
             ref={replyRef}
@@ -218,11 +224,13 @@ function SectionRow({
   docId,
   comments,
   dispatch,
+  actor,
 }: {
   section: Section
   docId: string
   comments: Comment[]
   dispatch: React.Dispatch<Action>
+  actor?: UserActor
 }) {
   const [expandedCommentId, setExpandedCommentId] = useState<string | null>(null)
   const [composing, setComposing] = useState(false)
@@ -257,25 +265,25 @@ function SectionRow({
     lastEditorBodyRef.current = json  // record what the editor emitted
     if (saveTimer.current) clearTimeout(saveTimer.current)
     saveTimer.current = setTimeout(() => {
-      dispatch({ type: 'EDIT_SECTION', docId, sectionId: section.id, body: json })
+      dispatch({ type: 'EDIT_SECTION', docId, sectionId: section.id, body: json, actor })
     }, 600)
   }, [dispatch, docId, section.id])
 
   useEffect(() => () => { if (saveTimer.current) clearTimeout(saveTimer.current) }, [])
 
   function handleResolve(commentId: string) {
-    dispatch({ type: 'RESOLVE_COMMENT', docId, commentId })
+    dispatch({ type: 'RESOLVE_COMMENT', docId, commentId, actor })
     setExpandedCommentId(null)
   }
 
   function handleReply(commentId: string, text: string) {
-    dispatch({ type: 'REPLY_TO_COMMENT', docId, commentId, text })
+    dispatch({ type: 'REPLY_TO_COMMENT', docId, commentId, text, actor })
   }
 
   function handlePostComment() {
     const trimmed = commentText.trim()
     if (!trimmed) return
-    dispatch({ type: 'ADD_COMMENT', docId, sectionId: section.id, text: trimmed })
+    dispatch({ type: 'ADD_COMMENT', docId, sectionId: section.id, text: trimmed, actor })
     setCommentText('')
     setComposing(false)
   }
@@ -323,10 +331,13 @@ function SectionRow({
         {composing && (
           <div className="ml-3 mt-1 w-44">
             <div className="flex items-center gap-1.5 mb-1.5">
-              <div className="w-5 h-5 rounded-full bg-indigo-500 flex items-center justify-center text-[10px] font-bold text-white shrink-0">
-                K
+              <div
+                className="w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold text-white shrink-0"
+                style={{ backgroundColor: actor?.color ?? '#6366f1' }}
+              >
+                {actor?.initial ?? 'U'}
               </div>
-              <span className="text-xs font-semibold text-gray-700 dark:text-gray-300">Khanh</span>
+              <span className="text-xs font-semibold text-gray-700 dark:text-gray-300">{actor?.name ?? 'You'}</span>
             </div>
             <textarea
               ref={composeRef}
@@ -366,6 +377,7 @@ function SectionRow({
             }
             onResolve={() => handleResolve(comment.id)}
             onReply={(text) => handleReply(comment.id, text)}
+            actor={actor}
           />
         ))}
       </div>
@@ -506,6 +518,8 @@ function TemplatePicker({
 
 export default function Editor() {
   const { activeDocument, isGenerating, dispatch } = useDocument()
+  const { currentUser } = useUser()
+  const actor = currentUser ?? undefined
   const [titleDraft, setTitleDraft] = useState('')
 
   // Sync draft when switching to a different document
@@ -569,7 +583,7 @@ export default function Editor() {
                 <span className="text-xs font-medium">Draft — only you and AI agents can see this</span>
               </div>
               <button
-                onClick={() => dispatch({ type: 'PUBLISH_DOCUMENT', docId: activeDocument.id })}
+                onClick={() => dispatch({ type: 'PUBLISH_DOCUMENT', docId: activeDocument.id, actor })}
                 className="flex items-center gap-1.5 px-3 py-1 text-xs font-semibold text-white bg-amber-600 hover:bg-amber-700 rounded-md transition-colors shrink-0 ml-3"
               >
                 Publish
@@ -597,6 +611,7 @@ export default function Editor() {
                     docId={activeDocument.id}
                     comments={sectionComments}
                     dispatch={dispatch}
+                    actor={actor}
                   />
                 )
               })}

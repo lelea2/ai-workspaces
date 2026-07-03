@@ -1,10 +1,13 @@
 import { getAIService } from '../services/ai'
 import { useDocument } from './useDocument'
+import { useUser } from '../store/UserContext'
 import { extractPlainText, isLexicalJson, plainTextToLexicalJson } from '../utils/lexical'
 import type { Comment, Suggestion } from '../types'
 
 export function useAI() {
   const { activeDocument, dispatch } = useDocument()
+  const { currentUser } = useUser()
+  const actor = currentUser ?? undefined
 
   async function generateDraft(prompt: string) {
     if (!activeDocument) return
@@ -54,7 +57,7 @@ export function useAI() {
   // Apply an already-approved AI body to the document (dispatches ACCEPT_SUGGESTION).
   function applyAcceptedSuggestion(suggestion: Suggestion, aiBody?: string) {
     if (!activeDocument) return
-    dispatch({ type: 'ACCEPT_SUGGESTION', docId: activeDocument.id, suggestionId: suggestion.id, aiBody })
+    dispatch({ type: 'ACCEPT_SUGGESTION', docId: activeDocument.id, suggestionId: suggestion.id, aiBody, actor })
   }
 
   // Step 1 of "Fix by Agent": call fix-comment to identify the span, then stream
@@ -93,8 +96,8 @@ export function useAI() {
     const section = activeDocument.sections.find((s) => s.id === sectionId)
     if (!section) return
     const newBody = isLexicalJson(section.body) ? plainTextToLexicalJson(aiBody) : aiBody
-    dispatch({ type: 'EDIT_SECTION', docId: activeDocument.id, sectionId, body: newBody })
-    dispatch({ type: 'RESOLVE_COMMENT', docId: activeDocument.id, commentId: comment.id })
+    dispatch({ type: 'EDIT_SECTION', docId: activeDocument.id, sectionId, body: newBody, actor })
+    dispatch({ type: 'RESOLVE_COMMENT', docId: activeDocument.id, commentId: comment.id, actor })
   }
 
   return { generateDraft, runReview, acceptSuggestion, applyAcceptedSuggestion, fixCommentByAgent, applyCommentFix }

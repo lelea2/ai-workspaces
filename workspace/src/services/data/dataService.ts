@@ -1,4 +1,4 @@
-import type { Document, Section, AgentConfig } from '../../types'
+import type { Document, Section, AgentConfig, User } from '../../types'
 
 async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
   const res = await fetch(path, init)
@@ -69,5 +69,21 @@ export const dataService = {
 
   getAgents(): Promise<AgentConfig[]> {
     return apiFetch('/api/data/agents')
+  },
+
+  getUsers(): Promise<User[]> {
+    return apiFetch('/api/data/users')
+  },
+
+  shareDocument(docId: string, userId: string): Promise<Document> {
+    return apiFetch(`/api/data/documents/${docId}/share`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ userId }),
+    })
+  },
+
+  unshareDocument(docId: string, userId: string): Promise<Document> {
+    return apiFetch(`/api/data/documents/${docId}/share/${userId}`, { method: 'DELETE' })
   },
 }

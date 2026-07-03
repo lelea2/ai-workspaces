@@ -44,7 +44,7 @@ The editor is a three-column layout powered by a centralized state machine:
 | **Editor** | Rich-text Lexical editor; each section is a SectionRow with inline comment bubbles that have Reply / Resolve / Fix by Agent actions |
 | **AI Panel** | Agent selector dropdown, suggestion cards with diff preview, streaming "typewriter" preview on accept, comment threads with "Fix by Agent" — streams → diff → approve/abort |
 | **Timeline** | Append-only activity log; shows all mutations (human edits, AI suggestions, accepts, discards, publishes) |
-| **Header** | Editable doc title, draft status banner, "Save template" button, Share popup |
+| **Header** | Editable doc title, draft status banner, "Save template" button, dark/light mode toggle (sun/moon icon), Share popup |
 
 **State Management:**
 - **DocumentContext + useReducer** — single source of truth for `documents[]`, `activeDocumentId`, `isGenerating`, `isReviewing`
@@ -127,6 +127,8 @@ A lightweight Node.js backend that proxies AI requests, stores mock data, and sy
 - **Fix by Agent** — Every comment card (right rail) and every inline editor bubble has a "Fix by Agent" action. Agent identifies the specific text span the comment refers to (`/api/ai/fix-comment`), then streams a polished body via the apply-suggestion SSE flow. User sees a streaming preview → diff view → must explicitly approve or abort before the document changes. Clicking "Fix by Agent" from an inline bubble also opens the right panel and auto-scrolls to the comment.
 - **Client-side status filter** — Sidebar has filter chips (All / Draft / Reviewing / Approved) with live counts; ANDed with text search; selection toggles or clears
 - **Template CRUD** — "Save template" button in Header opens a modal to name and save the current document as a reusable template. Each template in the Sidebar shows pencil (rename inline) and trash (delete with confirm) actions on hover. Backend routes: POST / PATCH / DELETE `/api/data/templates`.
+- **Template picker on empty doc** — When a new document has no sections, the Editor renders a card grid of all available templates. Picking one dispatches `GENERATE_DRAFT_SUCCESS` (reusing the same reducer path as an AI draft) to populate sections; the AI assistant immediately has structure to work with.
+- **Dark mode** — Class-based (`.dark` on `<html>`), toggled via sun/moon icon button in the Header. `UIContext` reads `localStorage('theme')` on first load and falls back to `prefers-color-scheme`. All components — Sidebar, Editor, LexicalEditor, AIPanel, Timeline, Header — have full `dark:` Tailwind variants. Tailwind v4 requires `@variant dark (&:where(.dark, .dark *))` in `index.css` to enable class-based toggling instead of the default media-query behavior.
 - **Activity timeline** — Append-only event log of all document mutations
 - **Seed data** — 6 pre-populated documents with realistic templates
 - **Responsive design** — Collapsible sidebar and AI panel; works on desktop
@@ -395,6 +397,10 @@ Based on `BUILD_PLAN.md` Phase 2–4 and feedback from reviewers:
    - Requires storing conversation thread ID in db
 
 4. ~~**Document templates UI**~~ ✅ **Done** — "Save template" button in Header, inline rename/delete per template in Sidebar; full CRUD backend (POST / PATCH / DELETE `/api/data/templates`). Sidebar auto-refreshes via a `templates-changed` window event fired by the Header after a save.
+
+5. ~~**Dark mode**~~ ✅ **Done** — Tailwind v4 class-based dark mode across all components. `UIContext` manages the `dark` class on `<html>`, persists preference to `localStorage`, and falls back to `prefers-color-scheme` on first load.
+
+6. ~~**Template picker for empty documents**~~ ✅ **Done** — New documents with no sections show a template card grid instead of an empty state. Selecting a template dispatches `GENERATE_DRAFT_SUCCESS` (same path as AI draft) so the editor is immediately populated.
 
 ---
 

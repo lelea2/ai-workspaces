@@ -1,12 +1,14 @@
 import { useState, useEffect } from 'react'
 import { DocumentProvider } from './store/DocumentContext'
 import { UIProvider } from './store/UIContext'
+import { UserProvider, useUser } from './store/UserContext'
 import { useDocument } from './hooks/useDocument'
 import Header from './components/Header/Header'
 import Sidebar from './components/Sidebar/Sidebar'
 import Editor from './components/Editor/Editor'
 import AIPanel from './components/AIPanel/AIPanel'
 import Timeline from './components/Timeline/Timeline'
+import UserPicker from './components/Auth/UserPicker'
 
 function ErrorToast() {
   const { error } = useDocument()
@@ -44,6 +46,21 @@ function ErrorToast() {
 }
 
 function AppShell() {
+  const { currentUser } = useUser()
+  const { dispatch } = useDocument()
+
+  // Assign ownership of any legacy localStorage docs that pre-date the auth system
+  useEffect(() => {
+    if (!currentUser) return
+    dispatch({ type: 'CLAIM_ORPHANED_DOCUMENTS', userId: currentUser.id })
+  // dispatch is stable (from useReducer); currentUser.id is the meaningful dep
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentUser?.id])
+
+  if (!currentUser) {
+    return <UserPicker />
+  }
+
   return (
     <>
       <div className="flex flex-col h-screen bg-gray-50 dark:bg-gray-950 overflow-hidden">
@@ -62,10 +79,12 @@ function AppShell() {
 
 export default function App() {
   return (
-    <DocumentProvider>
-      <UIProvider>
-        <AppShell />
-      </UIProvider>
-    </DocumentProvider>
+    <UserProvider>
+      <DocumentProvider>
+        <UIProvider>
+          <AppShell />
+        </UIProvider>
+      </DocumentProvider>
+    </UserProvider>
   )
 }

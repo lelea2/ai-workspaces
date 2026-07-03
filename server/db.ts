@@ -1,5 +1,5 @@
 // ── Server-side in-memory DB ──────────────────────────────────────────────────
-// Single source of truth for documents, templates, and agent configs.
+// Single source of truth for documents, templates, users, and agent configs.
 // Initialized at process start from seed data.
 // Swap the store maps for a real DB (Postgres, SQLite) behind these same
 // exported functions without touching any route or client code.
@@ -7,6 +7,13 @@
 // ── Shared types (mirror of workspace/src/types/index.ts) ────────────────────
 
 export type DocumentStatus = 'draft' | 'reviewing' | 'approved'
+
+export type User = {
+  id: string
+  name: string
+  initial: string
+  color: string
+}
 
 export type Section = {
   id: string
@@ -51,6 +58,7 @@ export type Suggestion = {
 export type ActivityEvent = {
   id: string
   actor: string
+  actorId?: string
   actorType: 'human' | 'ai'
   actorColor: string
   actorInitial: string
@@ -62,6 +70,8 @@ export type ActivityEvent = {
 export type Document = {
   id: string
   title: string
+  ownerId?: string
+  sharedWith?: string[]
   sections: Section[]
   comments: Comment[]
   suggestions: Suggestion[]
@@ -104,6 +114,8 @@ const SEED_DOCUMENTS: Document[] = [
   {
     id: 'doc-1',
     title: 'AI Document Collaboration – Technical Design Doc',
+    ownerId: 'user-khanh',
+    sharedWith: ['user-alice', 'user-marcus'],
     status: 'reviewing',
     version: 3,
     updatedAt: ago(3 * MIN),
@@ -203,10 +215,11 @@ const SEED_DOCUMENTS: Document[] = [
       },
       {
         id: 'event-2',
-        actor: 'Khanh',
+        actor: 'Alice',
+        actorId: 'user-alice',
         actorType: 'human',
-        actorColor: '#6366f1',
-        actorInitial: 'K',
+        actorColor: '#ec4899',
+        actorInitial: 'A',
         action: 'Edited Goals section',
         type: 'edited',
         createdAt: ago(5 * MIN),
@@ -224,6 +237,7 @@ const SEED_DOCUMENTS: Document[] = [
       {
         id: 'event-4',
         actor: 'Khanh',
+        actorId: 'user-khanh',
         actorType: 'human',
         actorColor: '#6366f1',
         actorInitial: 'K',
@@ -237,6 +251,8 @@ const SEED_DOCUMENTS: Document[] = [
   {
     id: 'doc-2',
     title: 'Product Requirements – v2',
+    ownerId: 'user-alice',
+    sharedWith: ['user-khanh', 'user-sarah'],
     status: 'draft',
     version: 1,
     updatedAt: ago(5 * HR),
@@ -251,10 +267,11 @@ const SEED_DOCUMENTS: Document[] = [
     events: [
       {
         id: 'event-1',
-        actor: 'Khanh',
+        actor: 'Alice',
+        actorId: 'user-alice',
         actorType: 'human',
-        actorColor: '#6366f1',
-        actorInitial: 'K',
+        actorColor: '#ec4899',
+        actorInitial: 'A',
         action: 'Created document',
         type: 'created',
         createdAt: ago(5 * HR),
@@ -265,6 +282,8 @@ const SEED_DOCUMENTS: Document[] = [
   {
     id: 'doc-3',
     title: 'Security Review – Q2',
+    ownerId: 'user-marcus',
+    sharedWith: ['user-khanh'],
     status: 'approved',
     version: 2,
     updatedAt: ago(DAY),
@@ -279,23 +298,35 @@ const SEED_DOCUMENTS: Document[] = [
     events: [
       {
         id: 'event-1',
-        actor: 'Khanh',
+        actor: 'Marcus',
+        actorId: 'user-marcus',
         actorType: 'human',
-        actorColor: '#6366f1',
-        actorInitial: 'K',
+        actorColor: '#14b8a6',
+        actorInitial: 'M',
         action: 'Approved document',
         type: 'accepted',
         createdAt: ago(DAY),
       },
       {
         id: 'event-2',
-        actor: 'AI Reviewer',
+        actor: 'Security Agent',
         actorType: 'ai',
-        actorColor: '#6366f1',
-        actorInitial: 'R',
+        actorColor: '#f43f5e',
+        actorInitial: 'S',
         action: 'Completed security review',
         type: 'reviewed',
         createdAt: ago(DAY + HR),
+      },
+      {
+        id: 'event-3',
+        actor: 'Marcus',
+        actorId: 'user-marcus',
+        actorType: 'human',
+        actorColor: '#14b8a6',
+        actorInitial: 'M',
+        action: 'Created document',
+        type: 'created',
+        createdAt: ago(DAY + 2 * HR),
       },
     ],
   },
@@ -303,6 +334,8 @@ const SEED_DOCUMENTS: Document[] = [
   {
     id: 'doc-4',
     title: 'Project Plan – Phoenix',
+    ownerId: 'user-sarah',
+    sharedWith: ['user-khanh', 'user-marcus'],
     status: 'reviewing',
     version: 1,
     updatedAt: ago(2 * DAY),
@@ -338,10 +371,10 @@ const SEED_DOCUMENTS: Document[] = [
     events: [
       {
         id: 'event-1',
-        actor: 'AI Reviewer',
+        actor: 'Technical Risk Agent',
         actorType: 'ai',
-        actorColor: '#6366f1',
-        actorInitial: 'R',
+        actorColor: '#f59e0b',
+        actorInitial: 'T',
         action: 'Added 2 suggestions',
         type: 'reviewed',
         createdAt: ago(2 * DAY),
@@ -349,9 +382,21 @@ const SEED_DOCUMENTS: Document[] = [
       {
         id: 'event-2',
         actor: 'Khanh',
+        actorId: 'user-khanh',
         actorType: 'human',
         actorColor: '#6366f1',
         actorInitial: 'K',
+        action: 'Edited Timeline section',
+        type: 'edited',
+        createdAt: ago(2 * DAY + 30 * MIN),
+      },
+      {
+        id: 'event-3',
+        actor: 'Sarah',
+        actorId: 'user-sarah',
+        actorType: 'human',
+        actorColor: '#f59e0b',
+        actorInitial: 'S',
         action: 'Created document',
         type: 'created',
         createdAt: ago(2 * DAY + HR),
@@ -362,6 +407,8 @@ const SEED_DOCUMENTS: Document[] = [
   {
     id: 'doc-5',
     title: 'Launch Plan – v1.0',
+    ownerId: 'user-james',
+    sharedWith: ['user-khanh'],
     status: 'draft',
     version: 1,
     updatedAt: ago(3 * DAY),
@@ -375,10 +422,11 @@ const SEED_DOCUMENTS: Document[] = [
     events: [
       {
         id: 'event-1',
-        actor: 'Khanh',
+        actor: 'James',
+        actorId: 'user-james',
         actorType: 'human',
-        actorColor: '#6366f1',
-        actorInitial: 'K',
+        actorColor: '#10b981',
+        actorInitial: 'J',
         action: 'Created document',
         type: 'created',
         createdAt: ago(3 * DAY),
@@ -389,6 +437,8 @@ const SEED_DOCUMENTS: Document[] = [
   {
     id: 'doc-6',
     title: 'Incident Review 2024-05',
+    ownerId: 'user-khanh',
+    sharedWith: ['user-sarah', 'user-marcus'],
     status: 'approved',
     version: 1,
     updatedAt: ago(5 * DAY),
@@ -404,6 +454,7 @@ const SEED_DOCUMENTS: Document[] = [
       {
         id: 'event-1',
         actor: 'Khanh',
+        actorId: 'user-khanh',
         actorType: 'human',
         actorColor: '#6366f1',
         actorInitial: 'K',
@@ -411,8 +462,29 @@ const SEED_DOCUMENTS: Document[] = [
         type: 'accepted',
         createdAt: ago(5 * DAY),
       },
+      {
+        id: 'event-2',
+        actor: 'Sarah',
+        actorId: 'user-sarah',
+        actorType: 'human',
+        actorColor: '#f59e0b',
+        actorInitial: 'S',
+        action: 'Resolved 3 comments',
+        type: 'resolved',
+        createdAt: ago(5 * DAY + HR),
+      },
     ],
   },
+]
+
+// ── Seed users ────────────────────────────────────────────────────────────────
+
+const SEED_USERS: User[] = [
+  { id: 'user-khanh',  name: 'Khanh',  initial: 'K', color: '#6366f1' },
+  { id: 'user-alice',  name: 'Alice',  initial: 'A', color: '#ec4899' },
+  { id: 'user-marcus', name: 'Marcus', initial: 'M', color: '#14b8a6' },
+  { id: 'user-sarah',  name: 'Sarah',  initial: 'S', color: '#f59e0b' },
+  { id: 'user-james',  name: 'James',  initial: 'J', color: '#10b981' },
 ]
 
 // ── Seed templates ────────────────────────────────────────────────────────────
@@ -611,6 +683,10 @@ const agents = new Map<string, AgentConfig>(
   SEED_AGENTS.map((a) => [a.id, a]),
 )
 
+const users = new Map<string, User>(
+  SEED_USERS.map((u) => [u.id, u]),
+)
+
 export const INITIAL_ACTIVE_ID = 'doc-1'
 
 // ── Document accessors ────────────────────────────────────────────────────────
@@ -672,4 +748,31 @@ export function deleteTemplate(id: string): boolean {
 
 export function getAgents(): AgentConfig[] {
   return [...agents.values()]
+}
+
+// ── User accessors ────────────────────────────────────────────────────────────
+
+export function getUsers(): User[] {
+  return [...users.values()]
+}
+
+export function getUser(id: string): User | undefined {
+  return users.get(id)
+}
+
+export function shareDocument(docId: string, userId: string): boolean {
+  const doc = documents.get(docId)
+  if (!doc) return false
+  const already = doc.sharedWith ?? []
+  if (!already.includes(userId)) {
+    documents.set(docId, { ...doc, sharedWith: [...already, userId] })
+  }
+  return true
+}
+
+export function unshareDocument(docId: string, userId: string): boolean {
+  const doc = documents.get(docId)
+  if (!doc) return false
+  documents.set(docId, { ...doc, sharedWith: (doc.sharedWith ?? []).filter((id) => id !== userId) })
+  return true
 }

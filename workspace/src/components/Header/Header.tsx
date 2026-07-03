@@ -2,9 +2,10 @@ import { useState, useRef, useEffect, useCallback } from 'react'
 import { useDocument } from '../../hooks/useDocument'
 import { useAI } from '../../hooks/useAI'
 import { useUI } from '../../store/UIContext'
+import { useUser } from '../../store/UserContext'
 import { formatRelativeTime } from '../../utils/time'
 import { dataService } from '../../services/data/dataService'
-import type { DocumentStatus, Section } from '../../types'
+import type { DocumentStatus, Section, User } from '../../types'
 
 const STATUS_STYLE: Record<DocumentStatus, string> = {
   draft: 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/50 dark:text-amber-400 dark:border-amber-800',
@@ -12,26 +13,45 @@ const STATUS_STYLE: Record<DocumentStatus, string> = {
   approved: 'bg-green-50 text-green-700 border-green-200 dark:bg-green-950/50 dark:text-green-400 dark:border-green-800',
 }
 
-function SharePopup({
+function Avatar({ user, size = 7, ring = true }: { user: User; size?: number; ring?: boolean }) {
+  const sizeClass = size === 7 ? 'w-7 h-7 text-xs' : size === 8 ? 'w-8 h-8 text-sm' : 'w-6 h-6 text-[10px]'
+  return (
+    <div
+      className={`${sizeClass} rounded-full flex items-center justify-center font-bold text-white shrink-0 ${ring ? 'ring-2 ring-white dark:ring-gray-900' : ''}`}
+      style={{ backgroundColor: user.color }}
+      title={user.name}
+    >
+      {user.initial}
+    </div>
+  )
+}
+
+function ShareModal({
   docId,
+  ownerId,
+  sharedWith,
+  allUsers,
   onClose,
+  onShare,
+  onUnshare,
 }: {
   docId: string
+  ownerId?: string
+  sharedWith: string[]
+  allUsers: User[]
   onClose: () => void
+  onShare: (userId: string) => void
+  onUnshare: (userId: string) => void
 }) {
-  const [copied, setCopied] = useState(false)
   const containerRef = useRef<HTMLDivElement>(null)
+  const [copied, setCopied] = useState(false)
   const url = `${window.location.origin}${window.location.pathname}?doc=${docId}`
 
   useEffect(() => {
     function handleClick(e: MouseEvent) {
-      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
-        onClose()
-      }
+      if (containerRef.current && !containerRef.current.contains(e.target as Node)) onClose()
     }
-    function handleKey(e: KeyboardEvent) {
-      if (e.key === 'Escape') onClose()
-    }
+    function handleKey(e: KeyboardEvent) { if (e.key === 'Escape') onClose() }
     document.addEventListener('mousedown', handleClick)
     document.addEventListener('keydown', handleKey)
     return () => {
@@ -41,66 +61,66 @@ function SharePopup({
   }, [onClose])
 
   async function handleCopy() {
-    try {
-      await navigator.clipboard.writeText(url)
-      setCopied(true)
-      setTimeout(() => setCopied(false), 2000)
-    } catch {
-      // fallback: select the input text
-    }
+    try { await navigator.clipboard.writeText(url); setCopied(true); setTimeout(() => setCopied(false), 2000) } catch {}
   }
+
+  const owner = allUsers.find((u) => u.id === ownerId)
+  const others = allUsers.filter((u) => u.id !== ownerId)
 
   return (
     <div
       ref={containerRef}
       className="absolute top-full right-0 mt-2 w-80 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl shadow-lg dark:shadow-black/30 p-4 z-50"
     >
-      <div className="flex items-center justify-between mb-3">
+      <div className="flex items-center justify-between mb-4">
         <p className="text-sm font-semibold text-gray-900 dark:text-gray-50">Share document</p>
-        <button
-          onClick={onClose}
-          className="p-1 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
-        >
-          <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-            <path d="M3 3l8 8M11 3L3 11" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-          </svg>
+        <button onClick={onClose} className="p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M3 3l8 8M11 3L3 11" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" /></svg>
         </button>
       </div>
-      <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">
-        Anyone with this link can view this document (no login required).
-      </p>
-      <div className="flex items-center gap-2">
-        <input
-          readOnly
-          value={url}
-          onFocus={(e) => e.target.select()}
+
+      {/* Copy link */}
+      <div className="flex items-center gap-2 mb-4">
+        <input readOnly value={url} onFocus={(e) => e.target.select()}
           className="flex-1 min-w-0 text-xs text-gray-700 dark:text-gray-300 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg px-2.5 py-2 outline-none font-mono truncate"
         />
-        <button
-          onClick={handleCopy}
-          className={`shrink-0 flex items-center gap-1.5 px-3 py-2 text-xs font-medium rounded-lg transition-all ${
-            copied
-              ? 'bg-green-100 dark:bg-green-900/50 text-green-700 dark:text-green-400 border border-green-200 dark:border-green-700'
-              : 'bg-blue-600 text-white hover:bg-blue-700'
-          }`}
+        <button onClick={handleCopy}
+          className={`shrink-0 px-3 py-2 text-xs font-medium rounded-lg transition-all ${copied ? 'bg-green-100 dark:bg-green-900/50 text-green-700 dark:text-green-400' : 'bg-blue-600 text-white hover:bg-blue-700'}`}
         >
-          {copied ? (
-            <>
-              <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-                <path d="M2 6l3 3 5-5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
-              Copied
-            </>
-          ) : (
-            <>
-              <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-                <rect x="4" y="1" width="7" height="8" rx="1" stroke="currentColor" strokeWidth="1.2" />
-                <path d="M1 4h2M1 4v7h7v-2" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
-              Copy
-            </>
-          )}
+          {copied ? 'Copied!' : 'Copy'}
         </button>
+      </div>
+
+      {/* Team access */}
+      <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-2">Team access</p>
+      <div className="space-y-1.5">
+        {owner && (
+          <div className="flex items-center gap-2.5 px-1 py-1">
+            <Avatar user={owner} size={7} ring={false} />
+            <span className="flex-1 text-sm text-gray-700 dark:text-gray-300">{owner.name}</span>
+            <span className="text-xs text-gray-400 dark:text-gray-600 bg-gray-100 dark:bg-gray-800 px-2 py-0.5 rounded-full">owner</span>
+          </div>
+        )}
+        {others.map((user) => {
+          const hasAccess = sharedWith.includes(user.id)
+          return (
+            <div key={user.id} className="flex items-center gap-2.5 px-1 py-1">
+              <Avatar user={user} size={7} ring={false} />
+              <span className="flex-1 text-sm text-gray-700 dark:text-gray-300">{user.name}</span>
+              <button
+                onClick={() => hasAccess ? onUnshare(user.id) : onShare(user.id)}
+                className={`text-xs px-2.5 py-1 rounded-full font-medium transition-all ${
+                  hasAccess
+                    ? 'bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-400 hover:bg-red-100 dark:hover:bg-red-900/30 hover:text-red-600 dark:hover:text-red-400'
+                    : 'text-gray-500 dark:text-gray-400 border border-gray-300 dark:border-gray-700 hover:border-blue-400 dark:hover:border-blue-600 hover:text-blue-600 dark:hover:text-blue-400'
+                }`}
+                title={hasAccess ? `Remove ${user.name}'s access` : `Give ${user.name} access`}
+              >
+                {hasAccess ? 'Access ✓' : '+ Invite'}
+              </button>
+            </div>
+          )
+        })}
       </div>
     </div>
   )
@@ -149,19 +169,11 @@ function SaveTemplateModal({
   }
 
   return (
-    <div
-      ref={containerRef}
-      className="absolute top-full right-0 mt-2 w-72 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl shadow-lg dark:shadow-black/30 p-4 z-50"
-    >
+    <div ref={containerRef} className="absolute top-full right-0 mt-2 w-72 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl shadow-lg dark:shadow-black/30 p-4 z-50">
       <div className="flex items-center justify-between mb-3">
         <p className="text-sm font-semibold text-gray-900 dark:text-gray-50">Save as template</p>
-        <button
-          onClick={onClose}
-          className="p-1 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
-        >
-          <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-            <path d="M3 3l8 8M11 3L3 11" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-          </svg>
+        <button onClick={onClose} className="p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M3 3l8 8M11 3L3 11" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" /></svg>
         </button>
       </div>
       <p className="text-xs text-gray-500 dark:text-gray-400 mb-3">Save the current document structure as a reusable template.</p>
@@ -181,15 +193,59 @@ function SaveTemplateModal({
           saved ? 'bg-green-100 dark:bg-green-900/50 text-green-700 dark:text-green-400' : 'bg-indigo-600 text-white hover:bg-indigo-700'
         }`}
       >
-        {saved ? (
-          <>
-            <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
-              <path d="M2 6.5l3 3 6-6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
-            Saved!
-          </>
-        ) : saving ? 'Saving…' : 'Save template'}
+        {saved ? 'Saved!' : saving ? 'Saving…' : 'Save template'}
       </button>
+    </div>
+  )
+}
+
+function CurrentUserMenu({ user, onLogout }: { user: User; onLogout: () => void }) {
+  const [open, setOpen] = useState(false)
+  const ref = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if (!open) return
+    function handleClick(e: MouseEvent) {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false)
+    }
+    document.addEventListener('mousedown', handleClick)
+    return () => document.removeEventListener('mousedown', handleClick)
+  }, [open])
+
+  return (
+    <div ref={ref} className="relative">
+      <button
+        onClick={() => setOpen((o) => !o)}
+        className="flex items-center gap-1.5 p-1 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+        title={`Signed in as ${user.name}`}
+      >
+        <div
+          className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold text-white"
+          style={{ backgroundColor: user.color }}
+        >
+          {user.initial}
+        </div>
+        <svg width="12" height="12" viewBox="0 0 12 12" fill="none" className="text-gray-400 dark:text-gray-600">
+          <path d="M3 4.5l3 3 3-3" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+      </button>
+      {open && (
+        <div className="absolute top-full right-0 mt-1.5 w-48 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl shadow-lg dark:shadow-black/30 py-1 z-50">
+          <div className="px-3 py-2 border-b border-gray-100 dark:border-gray-800">
+            <p className="text-xs font-semibold text-gray-900 dark:text-gray-50">{user.name}</p>
+            <p className="text-xs text-gray-400 dark:text-gray-600">Signed in</p>
+          </div>
+          <button
+            onClick={() => { setOpen(false); onLogout() }}
+            className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+          >
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+              <path d="M5 2H2.5A1.5 1.5 0 0 0 1 3.5v7A1.5 1.5 0 0 0 2.5 12H5M9.5 9.5L13 7l-3.5-2.5M13 7H5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+            Switch user
+          </button>
+        </div>
+      )}
     </div>
   )
 }
@@ -198,6 +254,7 @@ export default function Header() {
   const { activeDocument, isReviewing, isGenerating, dispatch } = useDocument()
   const { runReview } = useAI()
   const { sidebarOpen, panelOpen, darkMode, toggleSidebar, togglePanel, toggleDarkMode } = useUI()
+  const { currentUser, allUsers, logout } = useUser()
 
   const [editingTitle, setEditingTitle] = useState(false)
   const [draftTitle, setDraftTitle] = useState('')
@@ -243,6 +300,28 @@ export default function Header() {
     await dataService.saveTemplate(name, activeDocument.sections as Section[])
     window.dispatchEvent(new CustomEvent('templates-changed'))
   }
+
+  function handleShare(userId: string) {
+    if (!activeDocument) return
+    dispatch({ type: 'SHARE_DOCUMENT', docId: activeDocument.id, userId })
+    dataService.shareDocument(activeDocument.id, userId).catch(() => {})
+  }
+
+  function handleUnshare(userId: string) {
+    if (!activeDocument) return
+    dispatch({ type: 'UNSHARE_DOCUMENT', docId: activeDocument.id, userId })
+    dataService.unshareDocument(activeDocument.id, userId).catch(() => {})
+  }
+
+  // Build collaborator list: owner first, then shared users
+  const docOwner = activeDocument?.ownerId ? allUsers.find((u) => u.id === activeDocument.ownerId) : undefined
+  const sharedUsers = (activeDocument?.sharedWith ?? [])
+    .map((id) => allUsers.find((u) => u.id === id))
+    .filter((u): u is User => !!u)
+  const collaborators: User[] = [
+    ...(docOwner ? [docOwner] : []),
+    ...sharedUsers.filter((u) => u.id !== docOwner?.id),
+  ]
 
   const status = activeDocument?.status ?? 'draft'
   const savedAt = activeDocument ? formatRelativeTime(activeDocument.updatedAt) : ''
@@ -305,20 +384,21 @@ export default function Header() {
         )}
       </div>
 
-      {/* Right: actions + panel toggle */}
+      {/* Right: collaborators + actions + panel toggle */}
       <div className="flex items-center gap-1.5 shrink-0">
-        {/* Avatar group */}
-        <div className="hidden md:flex -space-x-1.5 mr-1">
-          {(['K', 'A', 'M'] as const).map((initial, i) => (
-            <div
-              key={i}
-              className="w-7 h-7 rounded-full border-2 border-white dark:border-gray-900 flex items-center justify-center text-xs font-semibold text-white"
-              style={{ backgroundColor: ['#6366f1', '#ec4899', '#14b8a6'][i] }}
-            >
-              {initial}
-            </div>
-          ))}
-        </div>
+        {/* Collaborator avatar stack */}
+        {activeDocument && collaborators.length > 0 && (
+          <div className="hidden md:flex -space-x-1.5 mr-1">
+            {collaborators.slice(0, 4).map((user) => (
+              <Avatar key={user.id} user={user} size={7} ring />
+            ))}
+            {collaborators.length > 4 && (
+              <div className="w-7 h-7 rounded-full ring-2 ring-white dark:ring-gray-900 bg-gray-200 dark:bg-gray-700 flex items-center justify-center text-[10px] font-semibold text-gray-600 dark:text-gray-300">
+                +{collaborators.length - 4}
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Save template */}
         <div ref={saveTemplateContainerRef} className="relative hidden sm:block">
@@ -365,7 +445,15 @@ export default function Header() {
             Share
           </button>
           {shareOpen && activeDocument && (
-            <SharePopup docId={activeDocument.id} onClose={closeShare} />
+            <ShareModal
+              docId={activeDocument.id}
+              ownerId={activeDocument.ownerId}
+              sharedWith={activeDocument.sharedWith ?? []}
+              allUsers={allUsers}
+              onClose={closeShare}
+              onShare={handleShare}
+              onUnshare={handleUnshare}
+            />
           )}
         </div>
 
@@ -412,18 +500,21 @@ export default function Header() {
           className="p-1.5 text-gray-400 dark:text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-md transition-colors"
         >
           {darkMode ? (
-            /* Sun — click to go light */
             <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
               <circle cx="8" cy="8" r="3" stroke="currentColor" strokeWidth="1.3" />
               <path d="M8 1.5V3M8 13v1.5M1.5 8H3M13 8h1.5M3.4 3.4l1.06 1.06M11.54 11.54l1.06 1.06M3.4 12.6l1.06-1.06M11.54 4.46l1.06-1.06" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
             </svg>
           ) : (
-            /* Moon — click to go dark */
             <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
               <path d="M13.5 10.5A6 6 0 0 1 5.5 2.5a6 6 0 1 0 8 8z" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" />
             </svg>
           )}
         </button>
+
+        {/* Current user menu */}
+        {currentUser && (
+          <CurrentUserMenu user={currentUser} onLogout={logout} />
+        )}
       </div>
     </header>
   )

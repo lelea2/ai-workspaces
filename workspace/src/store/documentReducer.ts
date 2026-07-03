@@ -1,4 +1,4 @@
-import type { AppState, Document, ActivityEvent, Reply } from '../types'
+import type { AppState, Document, ActivityEvent, Reply, UserActor } from '../types'
 import type { Action } from './actions'
 import { lexicalReplaceText, isLexicalJson, plainTextToLexicalJson } from '../utils/lexical'
 
@@ -10,9 +10,28 @@ export const initialState: AppState = {
   error: null,
 }
 
+const FALLBACK_ACTOR: UserActor = { id: '', name: 'User', color: '#6366f1', initial: 'U' }
+
 let _evtSeq = 0
 function makeEvent(partial: Omit<ActivityEvent, 'id' | 'createdAt'>): ActivityEvent {
   return { ...partial, id: `event-${Date.now()}-${++_evtSeq}`, createdAt: new Date().toISOString() }
+}
+
+function humanEvent(
+  actor: UserActor | undefined,
+  action: string,
+  type: ActivityEvent['type'],
+): ActivityEvent {
+  const a = actor ?? FALLBACK_ACTOR
+  return makeEvent({
+    actor: a.name,
+    actorId: a.id || undefined,
+    actorType: 'human',
+    actorColor: a.color,
+    actorInitial: a.initial,
+    action,
+    type,
+  })
 }
 
 function updateDoc(
@@ -43,19 +62,12 @@ export function documentReducer(state: AppState, action: Action): AppState {
       const newDoc: Document = {
         id: `doc-${Date.now()}`,
         title: action.title,
+        ownerId: action.actor?.id || undefined,
+        sharedWith: [],
         sections: action.sections,
         comments: [],
         suggestions: [],
-        events: [
-          makeEvent({
-            actor: 'Khanh',
-            actorType: 'human',
-            actorColor: '#6366f1',
-            actorInitial: 'K',
-            action: 'Created document',
-            type: 'created',
-          }),
-        ],
+        events: [humanEvent(action.actor, 'Created document', 'created')],
         status: 'draft',
         version: 1,
         updatedAt: new Date().toISOString(),
@@ -82,14 +94,11 @@ export function documentReducer(state: AppState, action: Action): AppState {
           s.id === action.sectionId ? { ...s, body: action.body } : s,
         ),
         events: [
-          makeEvent({
-            actor: 'Khanh',
-            actorType: 'human',
-            actorColor: '#6366f1',
-            actorInitial: 'K',
-            action: `Edited ${doc.sections.find((s) => s.id === action.sectionId)?.heading ?? 'section'}`,
-            type: 'edited',
-          }),
+          humanEvent(
+            action.actor,
+            `Edited ${doc.sections.find((s) => s.id === action.sectionId)?.heading ?? 'section'}`,
+            'edited',
+          ),
           ...doc.events,
         ],
       }))
@@ -155,8 +164,6 @@ export function documentReducer(state: AppState, action: Action): AppState {
           if (section.id !== suggestion.sectionId) return section
           let newBody: string
           if (action.aiBody !== undefined) {
-            // AI-rewritten body arrives as plain text; wrap in Lexical JSON if the
-            // section was already in Lexical format so the editor can parse it.
             newBody = isLexicalJson(section.body)
               ? plainTextToLexicalJson(action.aiBody)
               : action.aiBody
@@ -174,14 +181,7 @@ export function documentReducer(state: AppState, action: Action): AppState {
           ),
           updatedAt: new Date().toISOString(),
           events: [
-            makeEvent({
-              actor: 'Khanh',
-              actorType: 'human',
-              actorColor: '#6366f1',
-              actorInitial: 'K',
-              action: `Accepted suggestion in ${suggestion.sectionTitle}`,
-              type: 'accepted',
-            }),
+            humanEvent(action.actor, `Accepted suggestion in ${suggestion.sectionTitle}`, 'accepted'),
             ...doc.events,
           ],
         }
@@ -200,14 +200,7 @@ export function documentReducer(state: AppState, action: Action): AppState {
           ),
           updatedAt: new Date().toISOString(),
           events: [
-            makeEvent({
-              actor: 'Khanh',
-              actorType: 'human',
-              actorColor: '#6366f1',
-              actorInitial: 'K',
-              action: `Dismissed suggestion in ${suggestion.sectionTitle}`,
-              type: 'rejected',
-            }),
+            humanEvent(action.actor, `Dismissed suggestion in ${suggestion.sectionTitle}`, 'rejected'),
             ...doc.events,
           ],
         }
@@ -222,14 +215,7 @@ export function documentReducer(state: AppState, action: Action): AppState {
         ),
         updatedAt: new Date().toISOString(),
         events: [
-          makeEvent({
-            actor: 'Khanh',
-            actorType: 'human',
-            actorColor: '#6366f1',
-            actorInitial: 'K',
-            action: 'Resolved a comment',
-            type: 'resolved',
-          }),
+          humanEvent(action.actor, 'Resolved a comment', 'resolved'),
           ...doc.events,
         ],
       }))
@@ -238,13 +224,14 @@ export function documentReducer(state: AppState, action: Action): AppState {
       const section = state.documents
         .find((d) => d.id === action.docId)
         ?.sections.find((s) => s.id === action.sectionId)
+      const a = action.actor ?? FALLBACK_ACTOR
       const newComment = {
         id: `comment-${Date.now()}`,
         sectionId: action.sectionId,
         author: 'human' as const,
-        agentName: 'Khanh',
-        agentColor: '#6366f1',
-        agentInitial: 'K',
+        agentName: a.name,
+        agentColor: a.color,
+        agentInitial: a.initial,
         text: action.text,
         status: 'open' as const,
         createdAt: new Date().toISOString(),
@@ -255,26 +242,20 @@ export function documentReducer(state: AppState, action: Action): AppState {
         comments: [newComment, ...doc.comments],
         updatedAt: new Date().toISOString(),
         events: [
-          makeEvent({
-            actor: 'Khanh',
-            actorType: 'human',
-            actorColor: '#6366f1',
-            actorInitial: 'K',
-            action: `Commented on ${section?.heading ?? 'a section'}`,
-            type: 'commented',
-          }),
+          humanEvent(action.actor, `Commented on ${section?.heading ?? 'a section'}`, 'commented'),
           ...doc.events,
         ],
       }))
     }
 
     case 'REPLY_TO_COMMENT': {
+      const a = action.actor ?? FALLBACK_ACTOR
       const newReply: Reply = {
         id: `reply-${Date.now()}`,
         author: 'human',
-        agentName: 'Khanh',
-        agentColor: '#6366f1',
-        agentInitial: 'K',
+        agentName: a.name,
+        agentColor: a.color,
+        agentInitial: a.initial,
         text: action.text,
         createdAt: new Date().toISOString(),
       }
@@ -287,14 +268,7 @@ export function documentReducer(state: AppState, action: Action): AppState {
         ),
         updatedAt: new Date().toISOString(),
         events: [
-          makeEvent({
-            actor: 'Khanh',
-            actorType: 'human',
-            actorColor: '#6366f1',
-            actorInitial: 'K',
-            action: 'Replied to a comment',
-            type: 'replied',
-          }),
+          humanEvent(action.actor, 'Replied to a comment', 'replied'),
           ...doc.events,
         ],
       }))
@@ -309,17 +283,37 @@ export function documentReducer(state: AppState, action: Action): AppState {
         status: 'reviewing',
         updatedAt: new Date().toISOString(),
         events: [
-          makeEvent({
-            actor: 'Khanh',
-            actorType: 'human',
-            actorColor: '#6366f1',
-            actorInitial: 'K',
-            action: 'Published document',
-            type: 'published',
-          }),
+          humanEvent(action.actor, 'Published document', 'published'),
           ...doc.events,
         ],
       }))
+
+    case 'SHARE_DOCUMENT':
+      return updateDoc(state, action.docId, (doc) => ({
+        ...doc,
+        sharedWith: [...new Set([...(doc.sharedWith ?? []), action.userId])],
+        updatedAt: new Date().toISOString(),
+      }))
+
+    case 'UNSHARE_DOCUMENT':
+      return updateDoc(state, action.docId, (doc) => ({
+        ...doc,
+        sharedWith: (doc.sharedWith ?? []).filter((id) => id !== action.userId),
+        updatedAt: new Date().toISOString(),
+      }))
+
+    case 'CLAIM_ORPHANED_DOCUMENTS': {
+      const hasOrphaned = state.documents.some((d) => !d.ownerId)
+      if (!hasOrphaned) return state
+      return {
+        ...state,
+        documents: state.documents.map((d) =>
+          !d.ownerId
+            ? { ...d, ownerId: action.userId, sharedWith: d.sharedWith ?? [] }
+            : d,
+        ),
+      }
+    }
 
     case 'DELETE_DOCUMENT': {
       const remaining = state.documents.filter((d) => d.id !== action.docId)

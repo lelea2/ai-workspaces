@@ -11,6 +11,9 @@ import {
   updateTemplate,
   deleteTemplate,
   getAgents,
+  getUsers,
+  shareDocument,
+  unshareDocument,
   type Document,
   type Section,
 } from '../db.js'
@@ -130,6 +133,39 @@ dataRouter.delete('/templates/:id', (req, res) => {
   }
   console.log(`[data] deleted template id=${req.params.id}`)
   res.status(204).send()
+})
+
+// ── Sharing ───────────────────────────────────────────────────────────────────
+
+dataRouter.post('/documents/:id/share', (req, res) => {
+  const { userId } = req.body as { userId?: string }
+  if (!userId?.trim()) {
+    res.status(400).json({ error: 'userId is required' })
+    return
+  }
+  const ok = shareDocument(req.params.id, userId.trim())
+  if (!ok) {
+    res.status(404).json({ error: `Document '${req.params.id}' not found` })
+    return
+  }
+  console.log(`[data] shared document id=${req.params.id} with user=${userId}`)
+  res.json(getDocument(req.params.id))
+})
+
+dataRouter.delete('/documents/:id/share/:userId', (req, res) => {
+  const ok = unshareDocument(req.params.id, req.params.userId)
+  if (!ok) {
+    res.status(404).json({ error: `Document '${req.params.id}' not found` })
+    return
+  }
+  console.log(`[data] removed user=${req.params.userId} from document id=${req.params.id}`)
+  res.json(getDocument(req.params.id))
+})
+
+// ── Users ─────────────────────────────────────────────────────────────────────
+
+dataRouter.get('/users', (_req, res) => {
+  res.json(getUsers())
 })
 
 // ── Agents ────────────────────────────────────────────────────────────────────
