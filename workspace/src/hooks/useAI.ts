@@ -3,21 +3,28 @@ import { useDocument } from './useDocument'
 import { useUser } from '../store/UserContext'
 import { extractPlainText, isLexicalJson, plainTextToLexicalJson } from '../utils/lexical'
 import type { Comment, Suggestion } from '../types'
+import type { AIRequestContext } from '../services/ai/types'
 
 export function useAI() {
   const { activeDocument, dispatch } = useDocument()
   const { currentUser } = useUser()
   const actor = currentUser ?? undefined
 
+  function getContext(): AIRequestContext | undefined {
+    if (!activeDocument) return undefined
+    return {
+      documentId: activeDocument.id,
+      templateId: activeDocument.templateId,
+      title: activeDocument.title,
+      sections: activeDocument.sections,
+    }
+  }
+
   async function generateDraft(prompt: string) {
     if (!activeDocument) return
     dispatch({ type: 'GENERATE_DRAFT_START', docId: activeDocument.id })
     try {
-      const sections = await getAIService().generateDraft(prompt, {
-        documentId: activeDocument.id,
-        title: activeDocument.title,
-        sections: activeDocument.sections,
-      })
+      const sections = await getAIService().generateDraft(prompt, getContext())
       dispatch({ type: 'GENERATE_DRAFT_SUCCESS', docId: activeDocument.id, sections })
     } catch (err) {
       const error = err instanceof Error ? err.message : 'Draft generation failed.'
@@ -29,7 +36,7 @@ export function useAI() {
     if (!activeDocument) return
     dispatch({ type: 'RUN_REVIEW_START', docId: activeDocument.id })
     try {
-      const result = await getAIService().reviewDocument(activeDocument, agentName)
+      const result = await getAIService().reviewDocument(activeDocument, agentName, getContext())
       dispatch({ type: 'RUN_REVIEW_SUCCESS', docId: activeDocument.id, ...result })
     } catch (err) {
       const error = err instanceof Error ? err.message : 'Review failed.'
@@ -51,6 +58,7 @@ export function useAI() {
         section,
         suggestion,
         onChunk ?? (() => {}),
+        getContext(),
       )
       return result.body || undefined
     } catch {
@@ -76,7 +84,7 @@ export function useAI() {
     if (!section) return undefined
     const originalBody = extractPlainText(section.body)
     try {
-      const fix = await getAIService().fixComment(section, comment, activeDocument)
+      const fix = await getAIService().fixComment(section, comment, activeDocument, getContext())
       const syntheticSuggestion: Suggestion = {
         id: `comment-fix-${comment.id}`,
         sectionId: comment.sectionId,
@@ -87,7 +95,7 @@ export function useAI() {
         status: 'pending',
         createdAt: new Date().toISOString(),
       }
-      const result = await getAIService().applySuggestion(section, syntheticSuggestion, onChunk)
+      const result = await getAIService().applySuggestion(section, syntheticSuggestion, onChunk, getContext())
       return result.body ? { sectionId: comment.sectionId, originalBody, aiBody: result.body } : undefined
     } catch {
       return undefined

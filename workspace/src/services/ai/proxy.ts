@@ -1,8 +1,8 @@
 import type { Comment, Document, Section, Suggestion } from '../../types'
-import type { AIService, ReviewResult, ApplySuggestionResult, FixCommentResult, DraftContext } from './types'
+import type { AIService, ReviewResult, ApplySuggestionResult, FixCommentResult, AIRequestContext } from './types'
 
 export class ProxyAIService implements AIService {
-  async generateDraft(prompt: string, context?: DraftContext): Promise<Section[]> {
+  async generateDraft(prompt: string, context?: AIRequestContext): Promise<Section[]> {
     const res = await fetch('/api/ai/draft', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -15,11 +15,11 @@ export class ProxyAIService implements AIService {
     return res.json() as Promise<Section[]>
   }
 
-  async reviewDocument(doc: Document, agentName: string): Promise<ReviewResult> {
+  async reviewDocument(doc: Document, agentName: string, context?: AIRequestContext): Promise<ReviewResult> {
     const res = await fetch('/api/ai/review', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ document: doc, agentName }),
+      body: JSON.stringify({ document: doc, agentName, context }),
     })
     if (!res.ok) {
       const body = await res.json().catch(() => ({ error: res.statusText })) as { error?: string }
@@ -32,11 +32,12 @@ export class ProxyAIService implements AIService {
     section: Section,
     suggestion: Suggestion,
     onChunk: (chunk: string) => void,
+    context?: AIRequestContext,
   ): Promise<ApplySuggestionResult> {
     const res = await fetch('/api/ai/apply-suggestion', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ section, suggestion }),
+      body: JSON.stringify({ section, suggestion, context }),
     })
     if (!res.ok) {
       const err = await res.json().catch(() => ({ error: res.statusText })) as { error?: string }
@@ -72,7 +73,12 @@ export class ProxyAIService implements AIService {
     return { sectionId: section.id, body: accumulated }
   }
 
-  async fixComment(section: Section, comment: Comment, document: Document): Promise<FixCommentResult> {
+  async fixComment(
+    section: Section,
+    comment: Comment,
+    document: Document,
+    context?: AIRequestContext,
+  ): Promise<FixCommentResult> {
     const res = await fetch('/api/ai/fix-comment', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -80,6 +86,7 @@ export class ProxyAIService implements AIService {
         section,
         comment,
         document: { title: document.title, sections: document.sections },
+        context,
       }),
     })
     if (!res.ok) {

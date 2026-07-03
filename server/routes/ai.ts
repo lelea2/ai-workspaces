@@ -22,6 +22,13 @@ type ReviewedDocument = {
   sections: Section[]
 }
 
+type AIContext = {
+  documentId?: string
+  templateId?: string
+  title?: string
+  sections?: Section[]
+}
+
 // Map agent names to the avatar styles used in the frontend
 const AGENT_STYLE: Record<string, { color: string; initial: string }> = {
   'Drafting Agent':       { color: '#10b981', initial: 'D' },
@@ -80,10 +87,11 @@ export const aiRouter = Router()
 type ApplySuggestionPayload = {
   section: { id: string; heading: string; body: string }
   suggestion: { id: string; sectionId: string; originalText: string; suggestedText: string; reason: string }
+  context?: AIContext
 }
 
 aiRouter.post('/apply-suggestion', async (req, res) => {
-  const { section, suggestion } = req.body as Partial<ApplySuggestionPayload>
+  const { section, suggestion, context } = req.body as Partial<ApplySuggestionPayload>
   if (!section?.id || !suggestion?.originalText) {
     res.status(400).json({ error: 'section and suggestion are required' })
     return
@@ -132,6 +140,8 @@ aiRouter.post('/apply-suggestion', async (req, res) => {
 
   const userContent = bodyWithEdit !== null
     ? [
+        `Document id: ${context?.documentId ?? 'unknown'}`,
+        context?.templateId ? `Template id: ${context.templateId}` : '',
         `Section heading (context only — do not include it in your output): "${section.heading}"`,
         '',
         'This draft has already had the following edit applied (replacement is inserted inline).',
@@ -143,6 +153,8 @@ aiRouter.post('/apply-suggestion', async (req, res) => {
         '"""',
       ].join('\n')
     : [
+      `Document id: ${context?.documentId ?? 'unknown'}`,
+      context?.templateId ? `Template id: ${context.templateId}` : '',
         `Section heading (context only — do not include it in your output): "${section.heading}"`,
         '',
         'Current body:',
@@ -208,10 +220,11 @@ type FixCommentPayload = {
     title: string
     sections: { id: string; heading: string; body: string }[]
   }
+  context?: AIContext
 }
 
 aiRouter.post('/fix-comment', async (req, res) => {
-  const { section, comment, document: doc } = req.body as Partial<FixCommentPayload>
+  const { section, comment, document: doc, context } = req.body as Partial<FixCommentPayload>
   if (!section?.id || !comment?.text) {
     res.status(400).json({ error: 'section and comment are required' })
     return
@@ -244,6 +257,8 @@ aiRouter.post('/fix-comment', async (req, res) => {
     : ''
 
   const userContent = [
+    `Document id: "${context?.documentId ?? 'unknown'}"`,
+    context?.templateId ? `Template id: "${context.templateId}"` : '',
     doc?.title ? `Document title: "${doc.title}"` : '',
     otherSections
       ? `Other sections (for context only — do not modify them):\n---\n${otherSections}\n---`
@@ -297,11 +312,7 @@ aiRouter.post('/fix-comment', async (req, res) => {
 // ── POST /api/ai/draft ────────────────────────────────────────────────────────
 type DraftPayload = {
   prompt?: string
-  context?: {
-    documentId?: string
-    title?: string
-    sections?: Section[]
-  }
+  context?: AIContext
 }
 
 aiRouter.post('/draft', async (req, res) => {
@@ -333,6 +344,7 @@ aiRouter.post('/draft', async (req, res) => {
   const userContent = hasTemplateSections
     ? [
         `Document id: ${context?.documentId ?? 'unknown'}`,
+        context?.templateId ? `Template id: ${context.templateId}` : '',
         `Document title: ${context?.title ?? 'Untitled Document'}`,
         `Draft request: ${prompt}`,
         '',
@@ -386,9 +398,10 @@ aiRouter.post('/draft', async (req, res) => {
 
 // ── POST /api/ai/review ───────────────────────────────────────────────────────
 aiRouter.post('/review', async (req, res) => {
-  const { document: doc, agentName } = req.body as {
+  const { document: doc, agentName, context } = req.body as {
     document?: ReviewedDocument
     agentName?: string
+    context?: AIContext
   }
 
   if (!doc || !agentName) {
@@ -410,6 +423,15 @@ aiRouter.post('/review', async (req, res) => {
     .map((s) => `## ${s.heading} [sectionId: ${s.id}]\n\n${extractPlainText(s.body) || '(empty)'}`)
     .join('\n\n')
 
+  const reviewContext = [
+    `Document id: ${context?.documentId ?? 'unknown'}`,
+    context?.templateId ? `Template id: ${context.templateId}` : '',
+    context?.sections?.length
+      ? `Template section schema: ${context.sections.map((s) => `${s.id}:${s.heading}`).join(' | ')}`
+      : '',
+    'Only reference and suggest edits for existing section ids from this document/template schema.',
+  ].filter(Boolean).join('\n')
+
   try {
     const completion = await openai.chat.completions.create({
       model: 'gpt-4o',
@@ -422,7 +444,7 @@ aiRouter.post('/review', async (req, res) => {
         },
         {
           role: 'user',
-          content: `Title: ${doc.title}\n\n${docText}`,
+          content: `${reviewContext}\n\nTitle: ${doc.title}\n\n${docText}`,
         },
       ],
     })

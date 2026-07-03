@@ -1,5 +1,5 @@
 import type { Comment, Document, Section, Suggestion } from '../../types'
-import type { AIService, ApplySuggestionResult, FixCommentResult, ReviewResult, DraftContext } from './types'
+import type { AIService, ApplySuggestionResult, FixCommentResult, ReviewResult, AIRequestContext } from './types'
 import { extractPlainText } from '../../utils/lexical'
 
 const AGENT_STYLE: Record<string, { color: string }> = {
@@ -66,7 +66,7 @@ function commentForSection(section: Section): string {
 }
 
 export class MockAIService implements AIService {
-  async generateDraft(prompt: string, context?: DraftContext): Promise<Section[]> {
+  async generateDraft(prompt: string, context?: AIRequestContext): Promise<Section[]> {
     await sleep(900)
     if (context?.sections?.length) {
       return context.sections.map((section) => ({
@@ -106,7 +106,7 @@ export class MockAIService implements AIService {
     ]
   }
 
-  async reviewDocument(doc: Document, agentName: string): Promise<ReviewResult> {
+  async reviewDocument(doc: Document, agentName: string, _context?: AIRequestContext): Promise<ReviewResult> {
     await sleep(900)
 
     const sectionsWithContent = doc.sections.filter((s) => s.body.trim().length > 20)
@@ -153,6 +153,7 @@ export class MockAIService implements AIService {
     section: Section,
     suggestion: Suggestion,
     onChunk: (chunk: string) => void,
+    _context?: AIRequestContext,
   ): Promise<ApplySuggestionResult> {
     const plain = extractPlainText(section.body)
     const result = plain.includes(suggestion.originalText)
@@ -165,7 +166,12 @@ export class MockAIService implements AIService {
     return { sectionId: section.id, body: result }
   }
 
-  async fixComment(section: Section, comment: Comment, _document: Document): Promise<FixCommentResult> {
+  async fixComment(
+    section: Section,
+    comment: Comment,
+    _document: Document,
+    _context?: AIRequestContext,
+  ): Promise<FixCommentResult> {
     await sleep(600)
     const plain = extractPlainText(section.body)
     const firstSentenceEnd = plain.search(/[.!?]\s/)

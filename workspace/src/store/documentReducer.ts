@@ -131,6 +131,7 @@ export function documentReducer(state: AppState, action: Action): AppState {
       const newDoc: Document = {
         id: `doc-${Date.now()}`,
         title: action.title,
+        templateId: action.templateId,
         ownerId: action.actor?.id || undefined,
         sharedWith: [],
         sections: action.sections,
@@ -147,6 +148,13 @@ export function documentReducer(state: AppState, action: Action): AppState {
         activeDocumentId: newDoc.id,
       }
     }
+
+    case 'SET_DOCUMENT_TEMPLATE':
+      return updateDoc(state, action.docId, (doc) => ({
+        ...doc,
+        templateId: action.templateId,
+        updatedAt: new Date().toISOString(),
+      }))
 
     case 'UPDATE_DOCUMENT_TITLE':
       return updateDoc(state, action.docId, (doc) => ({

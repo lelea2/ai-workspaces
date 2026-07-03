@@ -2,9 +2,12 @@ import type { Comment, Document, Section, Suggestion } from '../../types'
 
 export interface DraftContext {
   documentId: string
+  templateId?: string
   title: string
   sections: Section[]
 }
+
+export type AIRequestContext = DraftContext
 
 export interface ReviewResult {
   comments: Comment[]
@@ -22,12 +25,13 @@ export interface FixCommentResult {
 }
 
 export interface AIService {
-  generateDraft(prompt: string, context?: DraftContext): Promise<Section[]>
-  reviewDocument(doc: Document, agentName: string): Promise<ReviewResult>
+  generateDraft(prompt: string, context?: AIRequestContext): Promise<Section[]>
+  reviewDocument(doc: Document, agentName: string, context?: AIRequestContext): Promise<ReviewResult>
   applySuggestion(
     section: Section,
     suggestion: Suggestion,
     onChunk: (chunk: string) => void,
+    context?: AIRequestContext,
   ): Promise<ApplySuggestionResult>
-  fixComment(section: Section, comment: Comment, document: Document): Promise<FixCommentResult>
+  fixComment(section: Section, comment: Comment, document: Document, context?: AIRequestContext): Promise<FixCommentResult>
 }

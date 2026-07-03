@@ -435,6 +435,7 @@ function TemplatePicker({
     setApplying(templateId)
     try {
       const sections = await dataService.buildTemplateSections(templateId)
+      dispatch({ type: 'SET_DOCUMENT_TEMPLATE', docId, templateId })
       dispatch({ type: 'GENERATE_DRAFT_SUCCESS', docId, sections })
     } catch {
       // error is silent; applying is always cleared in finally

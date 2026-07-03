@@ -120,7 +120,7 @@ export default function Sidebar() {
 
   async function handleTemplateClick(templateId: string, templateName: string) {
     const sections = await dataService.buildTemplateSections(templateId)
-    dispatch({ type: 'CREATE_DOCUMENT', title: `New ${templateName}`, sections, actor })
+    dispatch({ type: 'CREATE_DOCUMENT', title: `New ${templateName}`, sections, templateId, actor })
   }
 
   function handleDeleteConfirmed(docId: string) {

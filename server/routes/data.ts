@@ -49,6 +49,7 @@ dataRouter.post('/documents', (req, res) => {
   const doc: Document = {
     id: body.id,
     title: body.title,
+    templateId: body.templateId,
     status: body.status ?? 'draft',
     version: body.version ?? 1,
     updatedAt: body.updatedAt ?? now,

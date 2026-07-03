@@ -326,21 +326,7 @@ Based on `BUILD_PLAN.md` Phase 2–4 and feedback from reviewers:
 
 ---
 
-### Phase 3 — Real OpenAI + Server Setup (Week 2)
-
-**Already done in current build.** But if starting over:
-
-1. Set up Express server (1 hr)
-2. Add OpenAI SDK calls for draft + review (2 hrs)
-3. Add streaming for `applySuggestion` (1 hr)
-4. Set OPENAI_API_KEY in `.env` (30 mins)
-5. Test mock vs real swap (1 hr)
-
-**Why this order:** Separates concerns cleanly. Phase 1 proves the UX works. Phase 3 proves AI quality. Reviewers can see both paths work.
-
----
-
-### Phase 4 — Persistence & Sharing (Week 3)
+### Phase 3 — Persistence & Sharing (Week 3)
 
 **Goal:** Documents survive server restart; teams can share links.
 
@@ -365,7 +351,7 @@ Based on `BUILD_PLAN.md` Phase 2–4 and feedback from reviewers:
 
 ---
 
-### Phase 5 — Real-Time Collaboration (Week 4)
+### Phase 4 — Real-Time Collaboration (Week 4)
 
 **Goal:** Multiple users edit the same document without conflicts.
 

@@ -524,6 +524,15 @@ export default function AIPanel() {
   // Set when a comment focus arrives from the editor bubble; consumed once Comments tab renders
   const [pendingFocusCommentId, setPendingFocusCommentId] = useState<string | null>(null)
   const commentsListRef = useRef<HTMLDivElement>(null)
+  const autoAgentForDocRef = useRef<string | null>(null)
+
+  function isUntouchedDraftDocument(): boolean {
+    if (!activeDocument) return false
+    if (activeDocument.status !== 'draft') return false
+    if ((activeDocument.comments?.length ?? 0) > 0) return false
+    if ((activeDocument.suggestions?.length ?? 0) > 0) return false
+    return activeDocument.events.every((e) => e.type === 'created')
+  }
 
   useEffect(() => {
     dataService.getAgents().then((list) => {
@@ -535,6 +544,21 @@ export default function AIPanel() {
       }
     }).catch(() => {})
   }, [])
+
+  // On document switch: auto-select Drafting Agent for untouched draft docs;
+  // otherwise default to Reviewer Agent. This runs once per document id.
+  useEffect(() => {
+    if (!activeDocument?.id || agents.length === 0) return
+    if (autoAgentForDocRef.current === activeDocument.id) return
+    autoAgentForDocRef.current = activeDocument.id
+
+    const preferredId = isUntouchedDraftDocument() ? 'drafting' : 'reviewer'
+    const preferred = agents.find((a) => a.id === preferredId) ?? agents[0]
+    if (!preferred) return
+    setActiveAgentId(preferred.id)
+    setPrompt(preferred.prompt)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeDocument?.id, agents])
 
   // Reset per-suggestion/-comment transient state when switching documents
   useEffect(() => {

@@ -70,6 +70,7 @@ export type ActivityEvent = {
 export type Document = {
   id: string
   title: string
+  templateId?: string
   ownerId?: string
   sharedWith?: string[]
   sections: Section[]

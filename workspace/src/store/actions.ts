@@ -2,7 +2,8 @@ import type { Section, Comment, Suggestion, Document, UserActor } from '../types
 
 export type Action =
   | { type: 'SET_ACTIVE_DOCUMENT'; id: string }
-  | { type: 'CREATE_DOCUMENT'; title: string; sections: Section[]; actor?: UserActor }
+  | { type: 'CREATE_DOCUMENT'; title: string; sections: Section[]; templateId?: string; actor?: UserActor }
+  | { type: 'SET_DOCUMENT_TEMPLATE'; docId: string; templateId?: string }
   | { type: 'UPDATE_DOCUMENT_TITLE'; docId: string; title: string }
   | { type: 'EDIT_SECTION'; docId: string; sectionId: string; body: string; actor?: UserActor }
   | { type: 'GENERATE_DRAFT_START'; docId: string }
