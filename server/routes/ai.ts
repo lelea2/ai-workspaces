@@ -365,20 +365,23 @@ aiRouter.post('/review', async (req, res) => {
     const t = Date.now()
     const style = agentStyle(agentName)
 
-    const comments = (parsed.comments ?? []).map((c, i) => ({
-      id: `comment-${t}-${i}`,
-      sectionId: c.sectionId,
-      author: 'ai' as const,
-      agentName,
-      agentColor: style.color,
-      agentInitial: style.initial,
-      text: c.text,
-      status: 'open' as const,
-      createdAt: now,
-      replies: [],
-    }))
-
     const sectionMap = Object.fromEntries(doc.sections.map((s) => [s.id, s]))
+
+    const comments = (parsed.comments ?? [])
+      .filter((c) => !!sectionMap[c.sectionId])
+      .map((c, i) => ({
+        id: `comment-${t}-${i}`,
+        sectionId: c.sectionId,
+        author: 'ai' as const,
+        agentName,
+        agentColor: style.color,
+        agentInitial: style.initial,
+        text: c.text,
+        status: 'open' as const,
+        createdAt: now,
+        replies: [],
+      }))
+
     const suggestions = (parsed.suggestions ?? [])
       .filter((s) => {
         // Validate originalText against plain text (body may be Lexical JSON)
