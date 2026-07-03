@@ -12,6 +12,75 @@ export const initialState: AppState = {
 
 const FALLBACK_ACTOR: UserActor = { id: '', name: 'User', color: '#6366f1', initial: 'U' }
 
+function normalizeHeading(heading: string): string {
+  return heading
+    .toLowerCase()
+    .replace(/^\s*\d+[.)]?\s*/, '')
+    .replace(/\s+/g, ' ')
+    .trim()
+}
+
+function getEditedSectionHeadings(events: ActivityEvent[]): Set<string> {
+  const headings = new Set<string>()
+  for (const evt of events) {
+    if (evt.type !== 'edited') continue
+    const m = /^Edited\s+(.+)$/.exec(evt.action.trim())
+    if (!m) continue
+    headings.add(normalizeHeading(m[1]))
+  }
+  return headings
+}
+
+function mergeDraftSections(
+  existing: Section[],
+  generated: Section[],
+  events: ActivityEvent[],
+): Section[] {
+  if (existing.length === 0) return generated
+
+  const editedHeadings = getEditedSectionHeadings(events)
+  const generatedByHeading = new Map<string, Section[]>()
+  for (const section of generated) {
+    const key = normalizeHeading(section.heading)
+    const bucket = generatedByHeading.get(key)
+    if (bucket) bucket.push(section)
+    else generatedByHeading.set(key, [section])
+  }
+
+  const merged = existing.map((section) => {
+    const key = normalizeHeading(section.heading)
+    const bucket = generatedByHeading.get(key)
+    const match = bucket?.shift()
+
+    if (!match) return section
+
+    const isUserEdited = editedHeadings.has(key) && section.body.trim().length > 0
+    if (isUserEdited) return section
+
+    return {
+      ...section,
+      heading: match.heading,
+      body: match.body,
+    }
+  })
+
+  const unmatchedGenerated = [...generatedByHeading.values()].flat()
+  if (unmatchedGenerated.length === 0) return merged
+
+  const usedIds = new Set(merged.map((s) => s.id))
+  const appended = unmatchedGenerated.map((section, index) => {
+    if (!usedIds.has(section.id)) {
+      usedIds.add(section.id)
+      return section
+    }
+    const uniqueId = `${section.id}-${Date.now()}-${index}`
+    usedIds.add(uniqueId)
+    return { ...section, id: uniqueId }
+  })
+
+  return [...merged, ...appended]
+}
+
 let _evtSeq = 0
 function makeEvent(partial: Omit<ActivityEvent, 'id' | 'createdAt'>): ActivityEvent {
   return { ...partial, id: `event-${Date.now()}-${++_evtSeq}`, createdAt: new Date().toISOString() }
@@ -110,7 +179,7 @@ export function documentReducer(state: AppState, action: Action): AppState {
       return {
         ...updateDoc(state, action.docId, (doc) => ({
           ...doc,
-          sections: action.sections,
+          sections: mergeDraftSections(doc.sections, action.sections, doc.events),
           status: 'draft',
           version: doc.version + 1,
           updatedAt: new Date().toISOString(),

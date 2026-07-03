@@ -21,6 +21,7 @@ function SuggestionCard({
   onApprove,
   onDiscard,
   isApplying = false,
+  hasFailed = false,
   streamingBody,
   pendingBody,
 }: {
@@ -31,6 +32,7 @@ function SuggestionCard({
   onApprove: () => void
   onDiscard: () => void
   isApplying?: boolean
+  hasFailed?: boolean
   streamingBody?: string
   pendingBody?: string
 }) {
@@ -104,6 +106,16 @@ function SuggestionCard({
               <p className="text-gray-400 dark:text-gray-600 px-1 py-1">No textual changes detected.</p>
             )}
           </div>
+        </div>
+      )}
+
+      {hasFailed && suggestion.status === 'pending' && !hasPending && !isApplying && (
+        <div className="flex items-center gap-1.5 mt-2 mb-1 px-2 py-1.5 rounded-md bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800">
+          <svg width="11" height="11" viewBox="0 0 11 11" fill="none" className="shrink-0 text-red-500">
+            <path d="M5.5 1L1 9.5h9L5.5 1z" stroke="currentColor" strokeWidth="1.2" strokeLinejoin="round" />
+            <path d="M5.5 5v2M5.5 8.5h.01" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
+          </svg>
+          <span className="text-[11px] text-red-600 dark:text-red-400 flex-1">Rewrite failed — try again</span>
         </div>
       )}
 
@@ -193,6 +205,7 @@ function CommentItem({
   dispatch,
   actor,
   isFixing = false,
+  hasFailed = false,
   streamingBody,
   pendingFix,
   onFixByAgent,
@@ -204,6 +217,7 @@ function CommentItem({
   dispatch: React.Dispatch<Action>
   actor?: UserActor
   isFixing?: boolean
+  hasFailed?: boolean
   streamingBody?: string
   pendingFix?: { sectionId: string; originalBody: string; newBody: string }
   onFixByAgent?: () => void
@@ -375,6 +389,17 @@ function CommentItem({
             </div>
           )}
 
+          {/* Fix-by-agent error notice */}
+          {hasFailed && !isFixing && !pendingFix && (
+            <div className="flex items-center gap-1.5 mx-3 mt-2 mb-1 px-2 py-1.5 rounded-md bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800">
+              <svg width="11" height="11" viewBox="0 0 11 11" fill="none" className="shrink-0 text-red-500">
+                <path d="M5.5 1L1 9.5h9L5.5 1z" stroke="currentColor" strokeWidth="1.2" strokeLinejoin="round" />
+                <path d="M5.5 5v2M5.5 8.5h.01" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
+              </svg>
+              <span className="text-[11px] text-red-600 dark:text-red-400">Fix failed — try again</span>
+            </div>
+          )}
+
           {/* Actions */}
           {!replying && !isFixing && !pendingFix && (
             <div className="flex items-center gap-2 px-3 py-1.5">
@@ -493,6 +518,9 @@ export default function AIPanel() {
   const [commentStreamingContents, setCommentStreamingContents] = useState<Map<string, string>>(new Map())
   // commentId → { sectionId, originalBody, newBody } awaiting approval
   const [commentPendingFixes, setCommentPendingFixes] = useState<Map<string, { sectionId: string; originalBody: string; newBody: string }>>(new Map())
+  // IDs whose last stream attempt failed — cleared on retry or document change
+  const [failedSuggestionIds, setFailedSuggestionIds] = useState<Set<string>>(new Set())
+  const [failedCommentFixIds, setFailedCommentFixIds] = useState<Set<string>>(new Set())
   // Set when a comment focus arrives from the editor bubble; consumed once Comments tab renders
   const [pendingFocusCommentId, setPendingFocusCommentId] = useState<string | null>(null)
   const commentsListRef = useRef<HTMLDivElement>(null)
@@ -507,6 +535,18 @@ export default function AIPanel() {
       }
     }).catch(() => {})
   }, [])
+
+  // Reset per-suggestion/-comment transient state when switching documents
+  useEffect(() => {
+    setApplyingIds(new Set())
+    setStreamingContents(new Map())
+    setPendingApprovals(new Map())
+    setFixingCommentIds(new Set())
+    setCommentStreamingContents(new Map())
+    setCommentPendingFixes(new Map())
+    setFailedSuggestionIds(new Set())
+    setFailedCommentFixIds(new Set())
+  }, [activeDocument?.id])
 
   // Step 1: incoming focus from editor bubble → switch to Comments tab and store id
   useEffect(() => {
@@ -572,8 +612,11 @@ export default function AIPanel() {
 
   async function handleAccept(suggestion: Suggestion) {
     if (!activeDocument || applyingIds.has(suggestion.id) || pendingApprovals.has(suggestion.id)) return
+    // Clear any previous failure state for this suggestion before retrying
+    setFailedSuggestionIds((prev) => { const s = new Set(prev); s.delete(suggestion.id); return s })
     setApplyingIds((prev) => new Set(prev).add(suggestion.id))
     setStreamingContents((prev) => { const m = new Map(prev); m.set(suggestion.id, ''); return m })
+    let succeeded = false
     try {
       const aiBody = await acceptSuggestion(suggestion, (chunk) => {
         setStreamingContents((prev) => {
@@ -585,10 +628,14 @@ export default function AIPanel() {
       // Store the final body for user approval — do NOT commit yet
       if (aiBody) {
         setPendingApprovals((prev) => { const m = new Map(prev); m.set(suggestion.id, aiBody); return m })
+        succeeded = true
       }
     } finally {
       setApplyingIds((prev) => { const s = new Set(prev); s.delete(suggestion.id); return s })
       setStreamingContents((prev) => { const m = new Map(prev); m.delete(suggestion.id); return m })
+      if (!succeeded) {
+        setFailedSuggestionIds((prev) => new Set(prev).add(suggestion.id))
+      }
     }
   }
 
@@ -604,13 +651,17 @@ export default function AIPanel() {
 
   function handleDismiss(suggestion: Suggestion) {
     if (!activeDocument) return
+    setFailedSuggestionIds((prev) => { const s = new Set(prev); s.delete(suggestion.id); return s })
     dispatch({ type: 'REJECT_SUGGESTION', docId: activeDocument.id, suggestionId: suggestion.id, actor })
   }
 
   async function handleFixByAgent(comment: Comment) {
     if (fixingCommentIds.has(comment.id) || commentPendingFixes.has(comment.id)) return
+    // Clear any previous failure state for this comment before retrying
+    setFailedCommentFixIds((prev) => { const s = new Set(prev); s.delete(comment.id); return s })
     setFixingCommentIds((prev) => new Set(prev).add(comment.id))
     setCommentStreamingContents((prev) => { const m = new Map(prev); m.set(comment.id, ''); return m })
+    let succeeded = false
     try {
       const result = await fixCommentByAgent(comment, (chunk) => {
         setCommentStreamingContents((prev) => {
@@ -625,10 +676,14 @@ export default function AIPanel() {
           m.set(comment.id, { sectionId: result.sectionId, originalBody: result.originalBody, newBody: result.aiBody })
           return m
         })
+        succeeded = true
       }
     } finally {
       setFixingCommentIds((prev) => { const s = new Set(prev); s.delete(comment.id); return s })
       setCommentStreamingContents((prev) => { const m = new Map(prev); m.delete(comment.id); return m })
+      if (!succeeded) {
+        setFailedCommentFixIds((prev) => new Set(prev).add(comment.id))
+      }
     }
   }
 
@@ -769,6 +824,7 @@ export default function AIPanel() {
                   onApprove={() => handleApprove(suggestion)}
                   onDiscard={() => handleDiscard(suggestion)}
                   isApplying={applyingIds.has(suggestion.id)}
+                  hasFailed={failedSuggestionIds.has(suggestion.id)}
                   streamingBody={streamingContents.get(suggestion.id)}
                   pendingBody={pendingApprovals.get(suggestion.id)}
                 />
@@ -801,6 +857,7 @@ export default function AIPanel() {
                   dispatch={dispatch}
                   actor={actor}
                   isFixing={fixingCommentIds.has(comment.id)}
+                  hasFailed={failedCommentFixIds.has(comment.id)}
                   streamingBody={commentStreamingContents.get(comment.id)}
                   pendingFix={commentPendingFixes.get(comment.id)}
                   onFixByAgent={() => handleFixByAgent(comment)}
