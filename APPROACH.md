@@ -1,5 +1,7 @@
 # APPROACH.md
 
+Note: POC available at https://ai-workspaces-production.up.railway.app
+
 ## What We Built
 
 **AI Collaborative Document Workspace** — a web application where humans and AI agents draft, review, and refine documents together in one editor, with full version history and decision tracking.
