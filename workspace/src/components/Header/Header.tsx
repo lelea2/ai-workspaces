@@ -5,6 +5,7 @@ import { useUI } from '../../store/UIContext'
 import { useUser } from '../../store/UserContext'
 import { formatRelativeTime } from '../../utils/time'
 import { dataService } from '../../services/data/dataService'
+import { exportAsMarkdown, exportAsPDF } from '../../utils/export'
 import type { DocumentStatus, Section, User } from '../../types'
 
 const STATUS_STYLE: Record<DocumentStatus, string> = {
@@ -250,6 +251,86 @@ function CurrentUserMenu({ user, onLogout }: { user: User; onLogout: () => void 
   )
 }
 
+function ExportMenu({
+  title,
+  sections,
+}: {
+  title: string
+  sections: Section[]
+}) {
+  const [open, setOpen] = useState(false)
+  const ref = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if (!open) return
+    function handleClick(e: MouseEvent) {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false)
+    }
+    function handleKey(e: KeyboardEvent) { if (e.key === 'Escape') setOpen(false) }
+    document.addEventListener('mousedown', handleClick)
+    document.addEventListener('keydown', handleKey)
+    return () => {
+      document.removeEventListener('mousedown', handleClick)
+      document.removeEventListener('keydown', handleKey)
+    }
+  }, [open])
+
+  return (
+    <div ref={ref} className="relative hidden sm:block">
+      <button
+        onClick={() => setOpen((o) => !o)}
+        title="Export document"
+        className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-sm border rounded-md transition-colors ${
+          open
+            ? 'bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-600'
+            : 'text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800'
+        }`}
+      >
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+          <path d="M7 1v7M4.5 5.5L7 8l2.5-2.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" />
+          <path d="M2 10v1.5A1.5 1.5 0 0 0 3.5 13h7A1.5 1.5 0 0 0 12 11.5V10" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
+        </svg>
+        Export
+      </button>
+
+      {open && (
+        <div className="absolute top-full right-0 mt-2 w-52 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl shadow-lg dark:shadow-black/30 py-1 z-50">
+          <p className="px-3 pt-1.5 pb-1 text-[10px] font-semibold text-gray-400 dark:text-gray-600 uppercase tracking-wide">Download as</p>
+          <button
+            onClick={() => { exportAsMarkdown(title, sections); setOpen(false) }}
+            className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+          >
+            <span className="w-6 h-6 rounded-md bg-indigo-50 dark:bg-indigo-950/50 flex items-center justify-center shrink-0">
+              <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                <path d="M1.5 2h9v8h-9zM3 4.5h2M3 6.5h6M3 8.5h4" stroke="#6366f1" strokeWidth="1.1" strokeLinecap="round" />
+              </svg>
+            </span>
+            <div className="text-left">
+              <p className="font-medium leading-tight">Markdown</p>
+              <p className="text-xs text-gray-400 dark:text-gray-600 leading-tight">.md file</p>
+            </div>
+          </button>
+          <button
+            onClick={() => { exportAsPDF(title, sections); setOpen(false) }}
+            className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+          >
+            <span className="w-6 h-6 rounded-md bg-rose-50 dark:bg-rose-950/50 flex items-center justify-center shrink-0">
+              <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                <rect x="1.5" y="1" width="9" height="10" rx="1.5" stroke="#e11d48" strokeWidth="1.1" />
+                <path d="M3.5 4h5M3.5 6h5M3.5 8h3" stroke="#e11d48" strokeWidth="1.1" strokeLinecap="round" />
+              </svg>
+            </span>
+            <div className="text-left">
+              <p className="font-medium leading-tight">PDF</p>
+              <p className="text-xs text-gray-400 dark:text-gray-600 leading-tight">via browser print</p>
+            </div>
+          </button>
+        </div>
+      )}
+    </div>
+  )
+}
+
 export default function Header() {
   const { activeDocument, isReviewing, isGenerating, dispatch } = useDocument()
   const { runReview } = useAI()
@@ -426,6 +507,14 @@ export default function Header() {
             />
           )}
         </div>
+
+        {/* Export */}
+        {activeDocument && activeDocument.sections.length > 0 && (
+          <ExportMenu
+            title={activeDocument.title}
+            sections={activeDocument.sections as Section[]}
+          />
+        )}
 
         {/* Share */}
         <div ref={shareContainerRef} className="relative hidden sm:block">

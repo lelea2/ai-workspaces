@@ -225,12 +225,14 @@ function SectionRow({
   comments,
   dispatch,
   actor,
+  readonly = false,
 }: {
   section: Section
   docId: string
   comments: Comment[]
   dispatch: React.Dispatch<Action>
   actor?: UserActor
+  readonly?: boolean
 }) {
   const [expandedCommentId, setExpandedCommentId] = useState<string | null>(null)
   const [composing, setComposing] = useState(false)
@@ -250,7 +252,10 @@ function SectionRow({
   useEffect(() => {
     if (skipFirstBodyEffect.current) { skipFirstBodyEffect.current = false; return }
     if (section.body !== lastEditorBodyRef.current) {
-      // Body was changed externally (e.g. AI suggestion accepted) — remount editor
+      // Body changed externally (AI suggestion accepted, comment fix, etc.).
+      // Cancel any pending debounced save so the stale user content doesn't
+      // overwrite the just-applied AI change after the timer fires.
+      if (saveTimer.current) { clearTimeout(saveTimer.current); saveTimer.current = null }
       lastEditorBodyRef.current = section.body
       setExternalVersion((v) => v + 1)
     }
@@ -309,6 +314,7 @@ function SectionRow({
           sectionId={section.id}
           body={section.body}
           onChange={handleBodyChange}
+          readonly={readonly}
         />
       </div>
 
@@ -431,6 +437,8 @@ function TemplatePicker({
       const sections = await dataService.buildTemplateSections(templateId)
       dispatch({ type: 'GENERATE_DRAFT_SUCCESS', docId, sections })
     } catch {
+      // error is silent; applying is always cleared in finally
+    } finally {
       setApplying(null)
     }
   }
@@ -517,7 +525,7 @@ function TemplatePicker({
 // ---------- Editor ----------
 
 export default function Editor() {
-  const { activeDocument, isGenerating, dispatch } = useDocument()
+  const { activeDocument, isGenerating, isReviewing, dispatch } = useDocument()
   const { currentUser } = useUser()
   const actor = currentUser ?? undefined
   const [titleDraft, setTitleDraft] = useState('')
@@ -599,23 +607,35 @@ export default function Editor() {
           ) : activeDocument.sections.length === 0 ? (
             <TemplatePicker docId={activeDocument.id} dispatch={dispatch} />
           ) : (
-            <div className="space-y-6">
-              {activeDocument.sections.map((section) => {
-                const sectionComments = activeDocument.comments.filter(
-                  (c) => c.sectionId === section.id && c.status === 'open',
-                )
-                return (
-                  <SectionRow
-                    key={section.id}
-                    section={section}
-                    docId={activeDocument.id}
-                    comments={sectionComments}
-                    dispatch={dispatch}
-                    actor={actor}
-                  />
-                )
-              })}
-            </div>
+            <>
+              {isReviewing && (
+                <div className="flex items-center gap-2 mb-4 px-3 py-2 rounded-lg bg-violet-50 dark:bg-violet-950/40 border border-violet-200 dark:border-violet-800">
+                  <svg width="14" height="14" viewBox="0 0 14 14" fill="none" className="shrink-0 text-violet-500 animate-pulse">
+                    <circle cx="7" cy="7" r="5.5" stroke="currentColor" strokeWidth="1.4" />
+                    <path d="M4.5 7l2 2 3-3" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
+                  <span className="text-xs font-medium text-violet-700 dark:text-violet-400">AI is reviewing — editing paused until suggestions are ready</span>
+                </div>
+              )}
+              <div className="space-y-6">
+                {activeDocument.sections.map((section) => {
+                  const sectionComments = activeDocument.comments.filter(
+                    (c) => c.sectionId === section.id && c.status === 'open',
+                  )
+                  return (
+                    <SectionRow
+                      key={section.id}
+                      section={section}
+                      docId={activeDocument.id}
+                      comments={sectionComments}
+                      dispatch={dispatch}
+                      actor={actor}
+                      readonly={isReviewing}
+                    />
+                  )
+                })}
+              </div>
+            </>
           )}
         </div>
       </div>

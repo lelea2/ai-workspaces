@@ -195,11 +195,13 @@ export default function LexicalEditor({
   body,
   onChange,
   placeholder = 'Start writing…',
+  readonly = false,
 }: {
   sectionId: string
   body: string
   onChange: (json: string) => void
   placeholder?: string
+  readonly?: boolean
 }) {
   const [blockType, setBlockType] = useState<BlockType>('paragraph')
   const [formats, setFormats] = useState<Formats>({
@@ -260,19 +262,26 @@ export default function LexicalEditor({
   return (
     // Key by sectionId so the editor fully remounts when navigating between docs
     <LexicalComposer key={sectionId} initialConfig={initialConfig}>
-      {/* Toolbar — rendered outside the editor, communicates via composer context */}
-      <InnerToolbar
-        blockType={blockType}
-        formats={formats}
-        onStateChange={handleStateChange}
-        applyBlock={applyBlock}
-      />
+      {/* Toolbar — hidden while readonly */}
+      {!readonly && (
+        <InnerToolbar
+          blockType={blockType}
+          formats={formats}
+          onStateChange={handleStateChange}
+          applyBlock={applyBlock}
+        />
+      )}
 
       <div className="relative">
         <RichTextPlugin
           contentEditable={
             <ContentEditable
-              className="w-full text-sm text-gray-700 dark:text-gray-300 leading-relaxed outline-none min-h-[4rem] px-2 py-1.5 rounded-md border border-transparent focus:border-blue-300 focus:bg-blue-50/30 dark:focus:bg-blue-950/20 hover:border-gray-200 dark:hover:border-gray-700 transition-colors"
+              contentEditable={!readonly}
+              className={`w-full text-sm leading-relaxed outline-none min-h-16 px-2 py-1.5 rounded-md border border-transparent transition-colors ${
+                readonly
+                  ? 'text-gray-400 dark:text-gray-500 cursor-not-allowed select-none pointer-events-none'
+                  : 'text-gray-700 dark:text-gray-300 focus:border-blue-300 focus:bg-blue-50/30 dark:focus:bg-blue-950/20 hover:border-gray-200 dark:hover:border-gray-700'
+              }`}
               aria-placeholder={placeholder}
               placeholder={
                 <div className="absolute top-1.5 left-2 text-sm text-gray-300 dark:text-gray-700 pointer-events-none select-none">
@@ -288,7 +297,7 @@ export default function LexicalEditor({
         <ListPlugin />
         <LinkPlugin />
         <ClickableLinkPlugin />
-        <OnChangePlugin onChange={handleChange} ignoreSelectionChange />
+        {!readonly && <OnChangePlugin onChange={handleChange} ignoreSelectionChange />}
         <InitializerPlugin body={body} />
         <ToolbarPlugin onStateChange={handleStateChange} />
       </div>

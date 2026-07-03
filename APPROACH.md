@@ -129,8 +129,16 @@ A lightweight Node.js backend that proxies AI requests, stores mock data, and sy
 - **Template CRUD** — "Save template" button in Header opens a modal to name and save the current document as a reusable template. Each template in the Sidebar shows pencil (rename inline) and trash (delete with confirm) actions on hover. Backend routes: POST / PATCH / DELETE `/api/data/templates`.
 - **Template picker on empty doc** — When a new document has no sections, the Editor renders a card grid of all available templates. Picking one dispatches `GENERATE_DRAFT_SUCCESS` (reusing the same reducer path as an AI draft) to populate sections; the AI assistant immediately has structure to work with.
 - **Dark mode** — Class-based (`.dark` on `<html>`), toggled via sun/moon icon button in the Header. `UIContext` reads `localStorage('theme')` on first load and falls back to `prefers-color-scheme`. All components — Sidebar, Editor, LexicalEditor, AIPanel, Timeline, Header — have full `dark:` Tailwind variants. Tailwind v4 requires `@variant dark (&:where(.dark, .dark *))` in `index.css` to enable class-based toggling instead of the default media-query behavior.
+- **User identity & login** — Seed user roster (Khanh, Alice, Marcus, Sarah, James) stored in `server/db.ts`. On first load a full-screen user-picker lets you choose who you are; identity is persisted to `localStorage`. No passwords — mock identity for POC.
+- **Document ownership** — Every document carries `ownerId` and `sharedWith[]`. Documents created by a user are automatically owned by them. Sidebar filters strictly to docs the current user owns or has been shared on — no fallback.
+- **Share modal** — Header share button opens a modal listing all team users. Owner badge distinguishes the original creator. "+ Invite" / "Access ✓" toggle buttons call `POST /api/data/documents/:id/share` and `DELETE /api/data/documents/:id/share/:userId`; reducer is updated optimistically in parallel.
+- **Collaborator avatars** — Header shows a stacked avatar row for every user who owns or has been shared on the active document. Avatars use each user's unique brand color.
+- **Activity timeline with actor** — Every human event (edit, comment, reply, accept/reject suggestion, publish) records the acting user's name, color, and initial. AI events record the agent name and avatar color. Timeline renders distinct colored avatars per actor.
+- **Editor locked during AI review** — While `isReviewing` is true (AI is generating suggestions), all `LexicalEditor` instances switch to `readonly` mode (toolbar hidden, `contentEditable={false}`, muted text style). A violet banner reads "AI is reviewing — editing paused until suggestions are ready."
+- **Debounce race fix** — External body changes (accepted suggestions, "Fix by Agent" apply) now cancel any pending 600 ms save timer before remounting the editor, preventing stale user content from overwriting the AI-applied body.
+- **Template picker stuck fix** — `handlePickTemplate` now uses `finally` to clear `applying`, so template buttons are never permanently disabled after a successful apply.
 - **Activity timeline** — Append-only event log of all document mutations
-- **Seed data** — 6 pre-populated documents with realistic templates
+- **Seed data** — 6 pre-populated documents with realistic templates and ownership assigned across the 5 seed users
 - **Responsive design** — Collapsible sidebar and AI panel; works on desktop
 - **Rich editing toolbar** — Full formatting: bold/italic/underline, h1–h3 headings, bullet/numbered lists, links, code blocks; active state highlights; all wired to Lexical editor
 
@@ -380,10 +388,7 @@ Based on `BUILD_PLAN.md` Phase 2–4 and feedback from reviewers:
 
 ### Optional High-Value Wins (Lower Priority)
 
-1. **Export to PDF/Markdown** (3 hrs)
-   - Convert Lexical JSON to Markdown, PDF, or HTML
-   - Users want to share docs outside this tool
-   - Use `turndown.js` for Markdown, `jsPDF` for PDF
+1. ~~**Export to PDF/Markdown**~~ ✅ **Done** — "Export" dropdown in the Header (visible when the document has sections). "Markdown" triggers a `.md` file download; "PDF" opens a print-ready browser window with full CSS styling and auto-triggers `window.print()`. No external libraries — Lexical JSON is walked recursively by a custom converter in `workspace/src/utils/export.ts`.
 
 2. **Bulk operations** (2 hrs)
    - Accept all suggestions at once
