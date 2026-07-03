@@ -69,7 +69,7 @@ export function useAI() {
     if (!section) return undefined
     const originalBody = extractPlainText(section.body)
     try {
-      const fix = await getAIService().fixComment(section, comment)
+      const fix = await getAIService().fixComment(section, comment, activeDocument)
       const syntheticSuggestion: Suggestion = {
         id: `comment-fix-${comment.id}`,
         sectionId: comment.sectionId,

@@ -33,7 +33,7 @@ Today's workflow is fragmented:
 - **Persistence** — localStorage syncs all documents to browser storage on every state change; server keeps in-memory copy warm
 - **Lexical rich-text editor** — Full formatting support (bold, italic, lists, code); agent suggestions are applied as precise text replacements within the JSON node tree
 - **Real-time AI streaming** — `applySuggestion` streams chunks back to the client for live preview
-- **Human commenting** — Users can add inline comments to any section; comments can be resolved or dismissed
+- **Human commenting & replies** — Users can add inline comments to any section; expand to reply thread; each comment can be replied to by humans or resolved; reply count shown on collapsed card
 - **Activity timeline** — Append-only event log of all document mutations
 - **Seed data** — 6 pre-populated documents with realistic templates
 - **Responsive design** — Collapsible sidebar and AI panel; works on desktop
@@ -217,12 +217,6 @@ Based on `BUILD_PLAN.md` Phase 2–4 and feedback from reviewers:
    - `UNDO_LAST` pops from history, reruns reducer to prior state
    - Wire to Cmd+Z / Cmd+Shift+Z
    - Only undo/redo within one session (not persisted to localStorage)
-
-4. **Human comment replies** — Already partially built in Phase 1.8
-   - Wire up `REPLY_TO_COMMENT` action
-   - Display replies under each comment in both Sidebar and AIPanel
-   - `replies: Reply[]` array already in type definition
-   - ~2 hrs to finish UI
 
 **Why Phase 2:** These are UI polish and agent diversity. Core feedback loop is proven in Phase 1. More agents give reviewers more signal on document quality.
 

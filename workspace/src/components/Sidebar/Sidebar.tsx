@@ -29,6 +29,7 @@ export default function Sidebar() {
   const { documents, activeDocumentId, dispatch } = useDocument()
   const { sidebarOpen } = useUI()
   const [search, setSearch] = useState('')
+  const [statusFilter, setStatusFilter] = useState<DocumentStatus | null>(null)
   const [templatesOpen, setTemplatesOpen] = useState(true)
   const [templates, setTemplates] = useState<{ id: string; name: string }[]>([])
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null)
@@ -87,9 +88,13 @@ export default function Sidebar() {
 
   if (!sidebarOpen) return null
 
-  const filtered = documents.filter((d) =>
-    d.title.toLowerCase().includes(search.toLowerCase()),
-  )
+  const filtered = documents.filter((d) => {
+    if (!d.title.toLowerCase().includes(search.toLowerCase())) return false
+    if (statusFilter && d.status !== statusFilter) return false
+    return true
+  })
+
+  const countByStatus = (s: DocumentStatus) => documents.filter((d) => d.status === s).length
 
   function handleNewDocument() {
     dispatch({ type: 'CREATE_DOCUMENT', title: 'Untitled Document', sections: [] })
@@ -122,6 +127,33 @@ export default function Sidebar() {
             className="w-full pl-8 pr-3 py-1.5 text-sm bg-gray-50 border border-gray-200 rounded-md text-gray-700 placeholder-gray-400 outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           />
         </div>
+
+        {/* Status filter chips */}
+        <div className="flex gap-1 mt-2 flex-wrap">
+          {([null, 'draft', 'reviewing', 'approved'] as const).map((s) => {
+            const isActive = statusFilter === s
+            const label = s === null ? 'All' : s.charAt(0).toUpperCase() + s.slice(1)
+            const count = s === null ? documents.length : countByStatus(s)
+            return (
+              <button
+                key={String(s)}
+                onClick={() => setStatusFilter(isActive && s !== null ? null : s)}
+                className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium border transition-colors ${
+                  isActive
+                    ? s === null
+                      ? 'bg-gray-700 text-white border-gray-700'
+                      : `${STATUS_COLORS[s]} border-current`
+                    : 'bg-transparent text-gray-500 border-gray-200 hover:border-gray-300 hover:text-gray-700'
+                }`}
+              >
+                {label}
+                <span className={`text-[10px] ${isActive ? 'opacity-80' : 'text-gray-400'}`}>
+                  {count}
+                </span>
+              </button>
+            )
+          })}
+        </div>
       </div>
 
       {/* Documents list */}
@@ -141,7 +173,11 @@ export default function Sidebar() {
           </div>
 
           {filtered.length === 0 && (
-            <p className="text-xs text-gray-400 px-2 py-3">No documents found</p>
+            <p className="text-xs text-gray-400 px-2 py-3">
+              {statusFilter
+                ? `No ${statusFilter} documents`
+                : 'No documents found'}
+            </p>
           )}
 
           <ul className="space-y-0.5">

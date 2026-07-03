@@ -125,19 +125,49 @@ aiRouter.post('/apply-suggestion', async (req, res) => {
     }
 });
 aiRouter.post('/fix-comment', async (req, res) => {
-    const { section, comment } = req.body;
+    const { section, comment, document: doc } = req.body;
     if (!section?.id || !comment?.text) {
         res.status(400).json({ error: 'section and comment are required' });
         return;
     }
     const plainBody = extractPlainText(section.body ?? '');
+    const replies = comment.replies ?? [];
     const provider = USE_MOCK ? 'mock' : 'openai';
-    console.log(`[ai] provider=${provider}  op=fix-comment  section="${section.heading}"`);
+    console.log(`[ai] provider=${provider}  op=fix-comment  section="${section.heading}"  replies=${replies.length}`);
     if (USE_MOCK) {
         const result = mockFixComment(plainBody, comment.text);
         res.json(result);
         return;
     }
+    // Build document context: all sections except the target (provides background for the model)
+    const otherSections = (doc?.sections ?? [])
+        .filter((s) => s.id !== section.id)
+        .map((s) => `## ${s.heading} [${s.id}]\n\n${extractPlainText(s.body)}`)
+        .join('\n\n---\n\n');
+    // Build the conversation thread from replies
+    const replyThread = replies.length > 0
+        ? [
+            '',
+            'Human replies to the comment (in order — use these to understand what specifically should change):',
+            ...replies.map((r, i) => `${i + 1}. ${r.agentName}: "${r.text}"`),
+        ].join('\n')
+        : '';
+    const userContent = [
+        doc?.title ? `Document title: "${doc.title}"` : '',
+        otherSections
+            ? `Other sections (for context only — do not modify them):\n---\n${otherSections}\n---`
+            : '',
+        '',
+        `Target section heading (context only — do not include in output): "${section.heading}"`,
+        '',
+        'Target section body (the only text you may modify):',
+        '"""',
+        plainBody,
+        '"""',
+        '',
+        `Reviewer comment: "${comment.text}"`,
+        replyThread,
+    ].filter(Boolean).join('\n');
     try {
         const completion = await openai.chat.completions.create({
             model: 'gpt-4o',
@@ -145,19 +175,7 @@ aiRouter.post('/fix-comment', async (req, res) => {
             response_format: { type: 'json_object' },
             messages: [
                 { role: 'system', content: getFixCommentSystemPrompt() },
-                {
-                    role: 'user',
-                    content: [
-                        `Section heading (context only — do not include in output): "${section.heading}"`,
-                        '',
-                        'Section body:',
-                        '"""',
-                        plainBody,
-                        '"""',
-                        '',
-                        `Reviewer comment to address: "${comment.text}"`,
-                    ].join('\n'),
-                },
+                { role: 'user', content: userContent },
             ],
         });
         const raw = completion.choices[0].message.content?.trim() ?? '{}';

@@ -1,3 +1,5 @@
+// Scenario: Reused by all review agents so review output is strict JSON and can
+// be parsed/applied directly by backend/frontend automation.
 // ── Shared output rules appended to every review system prompt ───────────────
 
 const REVIEW_OUTPUT_RULES = `
@@ -14,6 +16,8 @@ Output rules (non-negotiable):
 - Provide 2–4 suggestions and 1–2 comments. Be specific and actionable.
 - Skip sections whose body is empty or very short (<10 words).`
 
+// Scenario: Persona selected when a specific review agent is invoked from the
+// AI panel (general, security, clarity, and technical risk reviews).
 // ── Per-agent personas ────────────────────────────────────────────────────────
 
 const REVIEW_PERSONAS: Record<string, string> = {
@@ -48,6 +52,8 @@ const REVIEW_PERSONAS: Record<string, string> = {
 // ── Exported prompt builders ──────────────────────────────────────────────────
 
 export function getDraftSystemPrompt(): string {
+  // Scenario: Used for first-pass document generation when the user asks AI to
+  // draft a structured multi-section document from scratch.
   return `You are a professional document drafting agent.
 Return ONLY a JSON object with a "sections" array — no markdown fences:
 { "sections": [{ "id": "<slug>", "heading": "<N. Title>", "body": "<body text>" }] }
@@ -60,6 +66,8 @@ Requirements:
 }
 
 export function getApplySuggestionSystemPrompt(): string {
+  // Scenario: Used after accepting a targeted suggestion so the model can
+  // smooth local phrasing/transitions without changing the inserted content.
   return `You are a document editor polishing a section body that has already had an edit applied to it.
 The edit has been inserted into the body text for you. Your only job is to smooth any awkward phrasing or transitions that resulted from the insertion, while preserving every word of the added content.
 The section heading is given to you only as context for tone/topic — it is not part of the body. Never include the heading, a "Section:" label, or any quotation marks/fences from the prompt in your output.
@@ -68,20 +76,26 @@ Return ONLY the polished section body text — no heading, no explanation, no pr
 }
 
 export function getFixCommentSystemPrompt(): string {
-  return `You are a document editor who receives a reviewer comment about a section body.
-Your job is to identify the specific text span in the body that the comment refers to and propose a concrete replacement.
+  // Scenario: Used when resolving a reviewer comment thread by generating a
+  // precise span replacement for the target section body.
+  return `You are a document editor. You receive a reviewer comment about a specific section, along with the full document for context and (optionally) a thread of human replies that clarify what should change.
+Your job is to identify the specific text span in the target section body that the comment refers to and propose a concrete replacement.
 Return ONLY a JSON object — no markdown fences, no explanation:
-{ "originalText": "<verbatim substring from the body>", "suggestedText": "<replacement for that span only>" }
+{ "originalText": "<verbatim substring from the target section body>", "suggestedText": "<replacement for that span only>" }
 
 Rules (non-negotiable):
-- originalText must be a verbatim, character-for-character substring of the body provided. Do NOT paraphrase or trim.
+- originalText must be a verbatim, character-for-character substring of the TARGET section body provided. Do NOT paraphrase or trim.
 - originalText should be the shortest span that captures what needs changing — not the entire body.
 - suggestedText replaces originalText only. Do not rewrite surrounding content.
 - Do NOT include the section heading or any "Section:" label in originalText or suggestedText.
+- If human replies are provided, treat them as the authoritative specification — they override or refine the original comment.
+- Use the other sections only for context (tone, terminology, existing decisions) — do NOT modify them.
 - If the comment is too general to identify a specific span, use the first meaningful sentence as originalText and improve it to address the comment.`
 }
 
 export function getReviewSystemPrompt(agentName: string): string {
+  // Scenario: Used for AI review passes; selects agent persona and combines it
+  // with shared output constraints for deterministic feedback payloads.
   const persona =
     REVIEW_PERSONAS[agentName] ??
     `You are ${agentName}. Review the document thoroughly and provide specific, actionable feedback.`

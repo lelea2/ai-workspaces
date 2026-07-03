@@ -23,5 +23,5 @@ export interface AIService {
     suggestion: Suggestion,
     onChunk: (chunk: string) => void,
   ): Promise<ApplySuggestionResult>
-  fixComment(section: Section, comment: Comment): Promise<FixCommentResult>
+  fixComment(section: Section, comment: Comment, document: Document): Promise<FixCommentResult>
 }

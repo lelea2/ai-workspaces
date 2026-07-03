@@ -158,7 +158,7 @@ export class MockAIService implements AIService {
     return { sectionId: section.id, body: result }
   }
 
-  async fixComment(section: Section, comment: Comment): Promise<FixCommentResult> {
+  async fixComment(section: Section, comment: Comment, _document: Document): Promise<FixCommentResult> {
     await sleep(600)
     const plain = extractPlainText(section.body)
     const firstSentenceEnd = plain.search(/[.!?]\s/)

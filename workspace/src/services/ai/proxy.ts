@@ -72,11 +72,15 @@ export class ProxyAIService implements AIService {
     return { sectionId: section.id, body: accumulated }
   }
 
-  async fixComment(section: Section, comment: Comment): Promise<FixCommentResult> {
+  async fixComment(section: Section, comment: Comment, document: Document): Promise<FixCommentResult> {
     const res = await fetch('/api/ai/fix-comment', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ section, comment }),
+      body: JSON.stringify({
+        section,
+        comment,
+        document: { title: document.title, sections: document.sections },
+      }),
     })
     if (!res.ok) {
       const err = await res.json().catch(() => ({ error: res.statusText })) as { error?: string }
