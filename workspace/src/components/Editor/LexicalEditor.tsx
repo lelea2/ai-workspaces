@@ -24,16 +24,16 @@ import { isLexicalJson } from '../../utils/lexical'
 
 const theme = {
   heading: {
-    h1: 'text-2xl font-bold text-gray-900 leading-tight mb-1',
-    h2: 'text-xl font-semibold text-gray-800 leading-tight mb-1',
-    h3: 'text-base font-semibold text-gray-700 leading-tight mb-0.5',
+    h1: 'text-2xl font-bold text-gray-900 dark:text-gray-50 leading-tight mb-1',
+    h2: 'text-xl font-semibold text-gray-800 dark:text-gray-100 leading-tight mb-1',
+    h3: 'text-base font-semibold text-gray-700 dark:text-gray-300 leading-tight mb-0.5',
   },
   text: {
     bold: 'font-bold',
     italic: 'italic',
     underline: 'underline',
     underlineStrikethrough: 'underline line-through',
-    code: 'font-mono bg-gray-100 text-rose-600 px-1 py-0.5 rounded text-[0.88em]',
+    code: 'font-mono bg-gray-100 dark:bg-gray-800 text-rose-600 dark:text-rose-400 px-1 py-0.5 rounded text-[0.88em]',
   },
   list: {
     ul: 'list-disc pl-5 space-y-0.5',
@@ -41,9 +41,9 @@ const theme = {
     listitem: 'leading-relaxed',
     nested: { listitem: 'list-none' },
   },
-  link: 'text-blue-600 underline cursor-pointer hover:text-blue-800',
+  link: 'text-blue-600 dark:text-blue-400 underline cursor-pointer hover:text-blue-800 dark:hover:text-blue-300',
   paragraph: 'leading-relaxed mb-0.5 min-h-[1.4em]',
-  code: 'font-mono bg-gray-900 text-emerald-300 rounded-lg px-4 py-3 text-[0.82em] my-2 block whitespace-pre-wrap border border-gray-700',
+  code: 'font-mono bg-gray-900 dark:bg-gray-950 text-emerald-300 rounded-lg px-4 py-3 text-[0.82em] my-2 block whitespace-pre-wrap border border-gray-700 dark:border-gray-600',
 }
 
 // ── Initializer plugin ────────────────────────────────────────────────────────
@@ -175,8 +175,8 @@ function ToolbarButton({
       onMouseDown={onMouseDown}
       className={`p-1.5 text-xs font-medium min-w-7 flex items-center justify-center rounded transition-colors
         ${active
-          ? 'bg-blue-100 text-blue-700'
-          : 'text-gray-500 hover:text-gray-800 hover:bg-gray-100'
+          ? 'bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300'
+          : 'text-gray-500 dark:text-gray-500 hover:text-gray-800 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700'
         }`}
     >
       {children}
@@ -185,7 +185,7 @@ function ToolbarButton({
 }
 
 function Divider() {
-  return <div className="w-px h-5 bg-gray-200 mx-1" />
+  return <div className="w-px h-5 bg-gray-200 dark:bg-gray-700 mx-1" />
 }
 
 // ── Main exported component ───────────────────────────────────────────────────
@@ -272,10 +272,10 @@ export default function LexicalEditor({
         <RichTextPlugin
           contentEditable={
             <ContentEditable
-              className="w-full text-sm text-gray-700 leading-relaxed outline-none min-h-[4rem] px-2 py-1.5 rounded-md border border-transparent focus:border-blue-300 focus:bg-blue-50/30 hover:border-gray-200 transition-colors"
+              className="w-full text-sm text-gray-700 dark:text-gray-300 leading-relaxed outline-none min-h-[4rem] px-2 py-1.5 rounded-md border border-transparent focus:border-blue-300 focus:bg-blue-50/30 dark:focus:bg-blue-950/20 hover:border-gray-200 dark:hover:border-gray-700 transition-colors"
               aria-placeholder={placeholder}
               placeholder={
-                <div className="absolute top-1.5 left-2 text-sm text-gray-300 pointer-events-none select-none">
+                <div className="absolute top-1.5 left-2 text-sm text-gray-300 dark:text-gray-700 pointer-events-none select-none">
                   {placeholder}
                 </div>
               }
@@ -335,7 +335,7 @@ function InnerToolbar({
   void onStateChange // consumed via ToolbarPlugin registration, not directly
 
   return (
-    <div className="flex items-center gap-0.5 px-2 py-1.5 border-b border-gray-100">
+    <div className="flex items-center gap-0.5 px-2 py-1.5 border-b border-gray-100 dark:border-gray-800">
       <ToolbarButton active={blockType === 'h1'} onMouseDown={(e) => { prevent(e); block(e, blockType === 'h1' ? 'paragraph' : 'h1') }} title="Heading 1">
         <span className="font-bold text-[11px]">H1</span>
       </ToolbarButton>

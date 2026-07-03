@@ -24,6 +24,94 @@ Today's workflow is fragmented:
 
 ---
 
+## Architecture & High-Level Implementation
+
+### System Diagram
+
+![AI Collaborative Workspace — Component Architecture](./architecture.svg)
+
+### Implementation Overview
+
+The system is split into **two layers** connected via HTTP:
+
+#### **Layer 1: Browser / React UI** (`workspace/src/`)
+
+The editor is a three-column layout powered by a centralized state machine:
+
+| Component | Role |
+|-----------|------|
+| **Sidebar** | Document list, status chip filters (All / Draft / Reviewing / Approved), create/delete UI, template list with preview popovers, inline template rename/delete |
+| **Editor** | Rich-text Lexical editor; each section is a SectionRow with inline comment bubbles that have Reply / Resolve / Fix by Agent actions |
+| **AI Panel** | Agent selector dropdown, suggestion cards with diff preview, streaming "typewriter" preview on accept, comment threads with "Fix by Agent" — streams → diff → approve/abort |
+| **Timeline** | Append-only activity log; shows all mutations (human edits, AI suggestions, accepts, discards, publishes) |
+| **Header** | Editable doc title, draft status banner, "Save template" button, Share popup |
+
+**State Management:**
+- **DocumentContext + useReducer** — single source of truth for `documents[]`, `activeDocumentId`, `isGenerating`, `isReviewing`
+- **All mutations** (EDIT_SECTION, ACCEPT_SUGGESTION, PUBLISH_DOCUMENT, etc.) flow through pure reducer logic
+- **localStorage sync** — state saved to browser storage on every dispatch; survives page reload
+- **Server sync effect** — compares prev→current document array; fires POST/PATCH/DELETE; retries 404 as POST (upsert)
+
+**Custom Hooks:**
+- `useDocument()` — unwraps DocumentContext; exposes activeDocument + dispatch
+- `useAI()` — encapsulates AI service calls (generateDraft, runReview, applySuggestion, fixCommentByAgent, applyCommentFix)
+- `useUI()` — manages panelOpen, sidebarOpen, and focusCommentId cross-panel signal
+
+**Client Services:**
+- `dataService` — CRUD operations to /api/data/* endpoints
+- `ProxyAIService` — generateDraft/reviewDocument as JSON fetch; applySuggestion as SSE stream reader
+- `MockAIService` — deterministic fake responses; swappable via `VITE_AI_PROVIDER=mock`
+
+**Body Format:**
+- Section bodies stored as Lexical editor state JSON (`{ "root": { ...nodes } }`)
+- AI suggestions are precise text replacements inside the JSON tree (preserves formatting)
+- Extracting plain text for AI prompts is deterministic via utility functions
+
+---
+
+#### **Layer 2: Express Server** (`server/`)
+
+A lightweight Node.js backend that proxies AI requests, stores mock data, and syncs client mutations:
+
+| Route | Purpose |
+|-------|---------|
+| **GET  /api/data/documents** | Returns all documents from in-memory DB |
+| **POST /api/data/documents** | Create new doc (409 if ID exists; used for upsert) |
+| **PATCH /api/data/documents/:id** | Update doc body/status (404 if missing) |
+| **DELETE /api/data/documents/:id** | Soft-delete or tombstone |
+| **GET /api/data/templates** | Returns template list (id + name) |
+| **GET /api/data/templates/:id/sections** | Builds section stubs from template def |
+| **POST /api/data/templates** | Save current document structure as new template |
+| **PATCH /api/data/templates/:id** | Rename template |
+| **DELETE /api/data/templates/:id** | Remove template |
+| **POST /api/ai/draft** | Mock or real OpenAI `gpt-4o` (JSON mode, t=0.7) → sections[] |
+| **POST /api/ai/review** | Mock or real OpenAI (JSON mode, t=0.4) → { comments[], suggestions[] } |
+| **POST /api/ai/apply-suggestion** | Server str.replace first, then gpt-4o stream (t=0.3) polishes → SSE |
+| **POST /api/ai/fix-comment** | OpenAI identifies span + replacement for a comment → { originalText, suggestedText } |
+
+**Database:**
+- **In-memory Map<id, Document>** — resets on server restart
+- Seeded with 3 template documents on boot
+- Client reconciles on startup (POST → 409 = silent OK)
+
+**AI Integration:**
+- **Mock mode** (Phase 1): deterministic fake responses with simulated delay
+- **Real mode** (Phase 3): OpenAI API key kept server-side; requests proxied from client
+- **Environment var** `VITE_AI_PROVIDER` switches without code changes
+
+**Streaming:**
+- `/api/ai/apply-suggestion` streams via SSE: `data:{"chunk":"…"}\n\n` per token
+- Client reads stream; calls `onChunk()` callback to update preview in real time
+- Final `data:[DONE]\n\n` signals end of stream
+
+**Fix by Agent two-step flow:**
+1. `POST /api/ai/fix-comment` — synchronous JSON call; model identifies the specific text span in the section body and returns `{ originalText, suggestedText }`
+2. The result is used as a synthetic Suggestion fed into `applySuggestion` SSE — same streaming preview + diff + approve/abort gate as regular suggestions
+3. On approve: dispatches `EDIT_SECTION` + `RESOLVE_COMMENT` atomically; neither fires unless user explicitly clicks "Apply fix"
+4. UIContext `focusCommentId` acts as a one-shot cross-panel signal: editor bubble click → opens right panel → effect switches to Comments tab → second effect scrolls to `[data-comment-id]` and auto-triggers the fix
+
+---
+
 ## What Actually Exists
 
 ### ✅ Fully Built (Production-Ready for a POC)
@@ -36,6 +124,9 @@ Today's workflow is fragmented:
 - **Lexical rich-text editor** — Full formatting support (bold, italic, lists, code); agent suggestions are applied as precise text replacements within the JSON node tree
 - **Real-time AI streaming** — `applySuggestion` streams chunks back to the client for live preview
 - **Human commenting & replies** — Users can add inline comments to any section; expand to reply thread; each comment can be replied to by humans or resolved; reply count shown on collapsed card
+- **Fix by Agent** — Every comment card (right rail) and every inline editor bubble has a "Fix by Agent" action. Agent identifies the specific text span the comment refers to (`/api/ai/fix-comment`), then streams a polished body via the apply-suggestion SSE flow. User sees a streaming preview → diff view → must explicitly approve or abort before the document changes. Clicking "Fix by Agent" from an inline bubble also opens the right panel and auto-scrolls to the comment.
+- **Client-side status filter** — Sidebar has filter chips (All / Draft / Reviewing / Approved) with live counts; ANDed with text search; selection toggles or clears
+- **Template CRUD** — "Save template" button in Header opens a modal to name and save the current document as a reusable template. Each template in the Sidebar shows pencil (rename inline) and trash (delete with confirm) actions on hover. Backend routes: POST / PATCH / DELETE `/api/data/templates`.
 - **Activity timeline** — Append-only event log of all document mutations
 - **Seed data** — 6 pre-populated documents with realistic templates
 - **Responsive design** — Collapsible sidebar and AI panel; works on desktop
@@ -47,10 +138,9 @@ Today's workflow is fragmented:
 - **Permissions** — No auth or RBAC; everything is public to whoever opens the URL
 - **Real-time sync** — Each user gets their own in-memory DB copy; no live multiplayer
 - **Conflict resolution** — Deltas on the server side are fire-and-forget; concurrent edits will overwrite
-- **Search** — Sidebar has a search box, but it only filters by document title
+- **Search** — Sidebar has a search box, but it only filters by document title (full-text search across section bodies not implemented)
 - **Undo/redo** — Not implemented; once a mutation is dispatched it's final (localStorage snapshot survives reload but no historical undo)
-- **Templates** — Can create from template, but cannot author new ones via UI
-- **Diff view** — Shows diffs before accepting a suggestion, but no document-level version comparison
+- **Diff view** — Shows diffs before accepting a suggestion or "Fix by Agent", but no document-level version comparison
 
 ### ❌ Intentionally Left Out
 
@@ -304,10 +394,7 @@ Based on `BUILD_PLAN.md` Phase 2–4 and feedback from reviewers:
    - "Make this section shorter" → agent rewrites with smaller body
    - Requires storing conversation thread ID in db
 
-4. **Document templates UI** (2 hrs)
-   - Currently you can create from template, but not edit/create templates via UI
-   - Add "Save as template" button
-   - Store in db instead of hardcoding
+4. ~~**Document templates UI**~~ ✅ **Done** — "Save template" button in Header, inline rename/delete per template in Sidebar; full CRUD backend (POST / PATCH / DELETE `/api/data/templates`). Sidebar auto-refreshes via a `templates-changed` window event fired by the Header after a save.
 
 ---
 
@@ -364,24 +451,24 @@ All support Node.js servers natively. Upload this repo and set `OPENAI_API_KEY` 
 
 ## Known Issues
 
-1. **Reference equality bug in sync effect** ([DocumentContext.tsx:127](workspace/src/store/DocumentContext.tsx#L127))
-   - Uses `prevDoc !== doc` which is always true (immutable updates)
-   - Causes unnecessary PATCH requests on every state change
-   - Fix: Implement deep equality or field-level diffing (~1 hr)
-
-2. **Draft generation overwrites sections destructively** ([documentReducer.ts:101](workspace/src/store/documentReducer.ts#L101))
+1. **Draft generation overwrites sections destructively** ([documentReducer.ts:101](workspace/src/store/documentReducer.ts#L101))
    - If user edits a section, then generates a draft, user edits are lost
    - Fix: Merge new sections with existing, or add a "replace all" confirmation (~2 hrs)
 
-3. **Status recalculation incomplete** ([documentReducer.ts:28-34](workspace/src/store/documentReducer.ts#L28-L34))
+2. **Status recalculation incomplete** ([documentReducer.ts:28-34](workspace/src/store/documentReducer.ts#L28-L34))
    - Only handles reviewing → approved transition
    - Missing cases: new suggestions added to reviewing doc, rejecting all suggestions
    - Fix: Expand logic to cover all state transitions (~1 hr)
 
-4. **Streaming content not cleared on error** ([AIPanel.tsx:435-455](workspace/src/components/AIPanel/AIPanel.tsx#L435-L455))
-   - If AI call fails midway, stale content remains in streamingContents map
+3. **Streaming content not cleared on error** ([AIPanel.tsx](workspace/src/components/AIPanel/AIPanel.tsx))
+   - If AI call fails midway, stale content remains in streamingContents / commentStreamingContents map
    - Next retry shows old preview
    - Fix: Clear map in error handler (~30 mins)
+
+4. **Template data resets on server restart**
+   - User-created templates (via "Save template") live in the same in-memory Map as seed templates
+   - They vanish on restart along with all other server-side state
+   - Fix: Add persistence (SQLite/Postgres) to `server/db.ts` — no route changes needed (~6 hrs)
 
 5. **localStorage quota silently exceeded**
    - After ~100+ documents, new edits fail silently

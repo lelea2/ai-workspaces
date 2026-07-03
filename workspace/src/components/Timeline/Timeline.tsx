@@ -69,10 +69,10 @@ function EventNode({ event }: { event: ActivityEvent }) {
       </div>
       <div className="flex flex-col">
         <div className="flex items-center gap-1 leading-tight">
-          <span className="text-xs font-medium text-gray-700">{event.actor}</span>
-          <span className="text-gray-300">{TYPE_ICON[event.type]}</span>
+          <span className="text-xs font-medium text-gray-700 dark:text-gray-300">{event.actor}</span>
+          <span className="text-gray-300 dark:text-gray-600">{TYPE_ICON[event.type]}</span>
         </div>
-        <span className="text-[10px] text-gray-500 leading-tight">
+        <span className="text-[10px] text-gray-500 dark:text-gray-500 leading-tight">
           {event.action} · {formatRelativeTime(event.createdAt)}
         </span>
       </div>
@@ -81,7 +81,7 @@ function EventNode({ event }: { event: ActivityEvent }) {
 }
 
 const CHEVRON = (
-  <svg width="14" height="14" viewBox="0 0 14 14" fill="none" className="text-gray-300 shrink-0">
+  <svg width="14" height="14" viewBox="0 0 14 14" fill="none" className="text-gray-300 dark:text-gray-600 shrink-0">
     <path d="M5 3l4 4-4 4" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
   </svg>
 )
@@ -95,13 +95,13 @@ export default function Timeline() {
   const visible = showAll ? deduped : deduped.slice(0, 6)
 
   return (
-    <div className="h-16 bg-white border-t border-gray-200 flex items-center px-4 gap-4 shrink-0">
-      <span className="text-xs font-semibold text-gray-400 uppercase tracking-wide whitespace-nowrap shrink-0">
+    <div className="h-16 bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700 flex items-center px-4 gap-4 shrink-0">
+      <span className="text-xs font-semibold text-gray-400 dark:text-gray-600 uppercase tracking-wide whitespace-nowrap shrink-0">
         Activity
       </span>
 
       {events.length === 0 ? (
-        <span className="text-xs text-gray-400">No activity yet</span>
+        <span className="text-xs text-gray-400 dark:text-gray-600">No activity yet</span>
       ) : (
         <div className="flex-1 flex items-center gap-3 overflow-x-auto min-w-0">
           {visible.map((event, index) => (

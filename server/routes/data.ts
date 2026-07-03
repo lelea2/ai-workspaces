@@ -7,8 +7,12 @@ import {
   deleteDocument,
   getTemplates,
   buildTemplateSections,
+  saveTemplate,
+  updateTemplate,
+  deleteTemplate,
   getAgents,
   type Document,
+  type Section,
 } from '../db.js'
 
 export const dataRouter = Router()
@@ -90,6 +94,42 @@ dataRouter.get('/templates/:id/sections', (req, res) => {
     return
   }
   res.json(sections)
+})
+
+dataRouter.post('/templates', (req, res) => {
+  const { name, sections } = req.body as { name?: string; sections?: Section[] }
+  if (!name?.trim() || !Array.isArray(sections)) {
+    res.status(400).json({ error: 'name and sections are required' })
+    return
+  }
+  const tpl = saveTemplate(name.trim(), sections.map(({ heading, body }) => ({ heading, body })))
+  console.log(`[data] created template id=${tpl.id} name="${tpl.name}"`)
+  res.status(201).json(tpl)
+})
+
+dataRouter.patch('/templates/:id', (req, res) => {
+  const { name } = req.body as { name?: string }
+  if (!name?.trim()) {
+    res.status(400).json({ error: 'name is required' })
+    return
+  }
+  const ok = updateTemplate(req.params.id, { name: name.trim() })
+  if (!ok) {
+    res.status(404).json({ error: `Template '${req.params.id}' not found` })
+    return
+  }
+  console.log(`[data] updated template id=${req.params.id}`)
+  res.json({ id: req.params.id, name: name.trim() })
+})
+
+dataRouter.delete('/templates/:id', (req, res) => {
+  const ok = deleteTemplate(req.params.id)
+  if (!ok) {
+    res.status(404).json({ error: `Template '${req.params.id}' not found` })
+    return
+  }
+  console.log(`[data] deleted template id=${req.params.id}`)
+  res.status(204).send()
 })
 
 // ── Agents ────────────────────────────────────────────────────────────────────

@@ -1,5 +1,8 @@
 @import "tailwindcss";
 
+/* Class-based dark mode — toggled by adding/removing .dark on <html> */
+@variant dark (&:where(.dark, .dark *));
+
 * {
   box-sizing: border-box;
 }
@@ -15,3 +18,11 @@ body {
   height: 100vh;
   overflow: hidden;
 }
+
+/* Scrollbar theming */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 3px; }
+.dark ::-webkit-scrollbar-thumb { background: #374151; }
+::-webkit-scrollbar-thumb:hover { background: #9ca3af; }
+.dark ::-webkit-scrollbar-thumb:hover { background: #4b5563; }

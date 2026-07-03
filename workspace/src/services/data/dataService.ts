@@ -47,6 +47,26 @@ export const dataService = {
     return apiFetch(`/api/data/templates/${templateId}/sections`)
   },
 
+  saveTemplate(name: string, sections: Section[]): Promise<{ id: string; name: string }> {
+    return apiFetch('/api/data/templates', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name, sections }),
+    })
+  },
+
+  updateTemplate(id: string, name: string): Promise<{ id: string; name: string }> {
+    return apiFetch(`/api/data/templates/${id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name }),
+    })
+  },
+
+  deleteTemplate(id: string): Promise<void> {
+    return apiFetch(`/api/data/templates/${id}`, { method: 'DELETE' })
+  },
+
   getAgents(): Promise<AgentConfig[]> {
     return apiFetch('/api/data/agents')
   },

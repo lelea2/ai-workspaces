@@ -7,16 +7,16 @@ import { dataService } from '../../services/data/dataService'
 import type { DocumentStatus, Section } from '../../types'
 
 const STATUS_COLORS: Record<DocumentStatus, string> = {
-  reviewing: 'bg-blue-100 text-blue-700',
-  draft: 'bg-gray-100 text-gray-600',
-  approved: 'bg-green-100 text-green-700',
+  reviewing: 'bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-400',
+  draft: 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400',
+  approved: 'bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-400',
 }
 
 function DocIcon({ active }: { active: boolean }) {
   return (
     <svg
       width="14" height="14" viewBox="0 0 14 14" fill="none"
-      className={`shrink-0 mt-0.5 ${active ? 'text-blue-500' : 'text-gray-400'}`}
+      className={`shrink-0 mt-0.5 ${active ? 'text-blue-500 dark:text-blue-400' : 'text-gray-400 dark:text-gray-600'}`}
     >
       <path d="M3 2h5.5L11 4.5V12H3V2z" stroke="currentColor" strokeWidth="1.2" strokeLinejoin="round" />
       <path d="M8.5 2v3H11" stroke="currentColor" strokeWidth="1.2" strokeLinejoin="round" />
@@ -33,6 +33,9 @@ export default function Sidebar() {
   const [templatesOpen, setTemplatesOpen] = useState(true)
   const [templates, setTemplates] = useState<{ id: string; name: string }[]>([])
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null)
+  const [editingTemplateId, setEditingTemplateId] = useState<string | null>(null)
+  const [editNameDraft, setEditNameDraft] = useState('')
+  const [confirmDeleteTemplateId, setConfirmDeleteTemplateId] = useState<string | null>(null)
 
   // Template preview popover
   const [hoveredTemplate, setHoveredTemplate] = useState<{ id: string; name: string } | null>(null)
@@ -84,6 +87,9 @@ export default function Sidebar() {
 
   useEffect(() => {
     dataService.getTemplates().then(setTemplates).catch(() => {})
+    function refresh() { dataService.getTemplates().then(setTemplates).catch(() => {}) }
+    window.addEventListener('templates-changed', refresh)
+    return () => window.removeEventListener('templates-changed', refresh)
   }, [])
 
   if (!sidebarOpen) return null
@@ -110,12 +116,30 @@ export default function Sidebar() {
     setConfirmDeleteId(null)
   }
 
+  async function handleRenameTemplate(id: string) {
+    const name = editNameDraft.trim()
+    setEditingTemplateId(null)
+    if (!name) return
+    try {
+      await dataService.updateTemplate(id, name)
+      setTemplates((prev) => prev.map((t) => t.id === id ? { ...t, name } : t))
+    } catch { /* ignore */ }
+  }
+
+  async function handleDeleteTemplate(id: string) {
+    setConfirmDeleteTemplateId(null)
+    try {
+      await dataService.deleteTemplate(id)
+      setTemplates((prev) => prev.filter((t) => t.id !== id))
+    } catch { /* ignore */ }
+  }
+
   return (
-    <aside className="w-65 shrink-0 flex flex-col bg-white border-r border-gray-200 overflow-hidden">
+    <aside className="w-65 shrink-0 flex flex-col bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-800 overflow-hidden">
       {/* Search */}
       <div className="px-3 pt-3 pb-2">
         <div className="relative">
-          <svg className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400" width="14" height="14" viewBox="0 0 14 14" fill="none">
+          <svg className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-600" width="14" height="14" viewBox="0 0 14 14" fill="none">
             <circle cx="6" cy="6" r="4" stroke="currentColor" strokeWidth="1.3" />
             <path d="M9.5 9.5L12 12" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
           </svg>
@@ -124,7 +148,7 @@ export default function Sidebar() {
             placeholder="Search docs..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full pl-8 pr-3 py-1.5 text-sm bg-gray-50 border border-gray-200 rounded-md text-gray-700 placeholder-gray-400 outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            className="w-full pl-8 pr-3 py-1.5 text-sm bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-md text-gray-700 dark:text-gray-300 placeholder-gray-400 dark:placeholder-gray-600 outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           />
         </div>
 
@@ -141,13 +165,13 @@ export default function Sidebar() {
                 className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium border transition-colors ${
                   isActive
                     ? s === null
-                      ? 'bg-gray-700 text-white border-gray-700'
+                      ? 'bg-gray-700 dark:bg-gray-200 text-white dark:text-gray-900 border-gray-700 dark:border-gray-200'
                       : `${STATUS_COLORS[s]} border-current`
-                    : 'bg-transparent text-gray-500 border-gray-200 hover:border-gray-300 hover:text-gray-700'
+                    : 'bg-transparent text-gray-500 dark:text-gray-500 border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 hover:text-gray-700 dark:hover:text-gray-300'
                 }`}
               >
                 {label}
-                <span className={`text-[10px] ${isActive ? 'opacity-80' : 'text-gray-400'}`}>
+                <span className={`text-[10px] ${isActive ? 'opacity-80' : 'text-gray-400 dark:text-gray-600'}`}>
                   {count}
                 </span>
               </button>
@@ -160,11 +184,11 @@ export default function Sidebar() {
       <div className="flex-1 overflow-y-auto">
         <div className="px-3 pb-1">
           <div className="flex items-center justify-between mb-1">
-            <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Documents</span>
+            <span className="text-xs font-semibold text-gray-400 dark:text-gray-600 uppercase tracking-wider">Documents</span>
             <button
               onClick={handleNewDocument}
               title="New document"
-              className="p-0.5 text-gray-400 hover:text-gray-600 rounded"
+              className="p-0.5 text-gray-400 dark:text-gray-600 hover:text-gray-600 dark:hover:text-gray-300 rounded"
             >
               <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
                 <path d="M7 3v8M3 7h8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
@@ -173,10 +197,8 @@ export default function Sidebar() {
           </div>
 
           {filtered.length === 0 && (
-            <p className="text-xs text-gray-400 px-2 py-3">
-              {statusFilter
-                ? `No ${statusFilter} documents`
-                : 'No documents found'}
+            <p className="text-xs text-gray-400 dark:text-gray-600 px-2 py-3">
+              {statusFilter ? `No ${statusFilter} documents` : 'No documents found'}
             </p>
           )}
 
@@ -187,33 +209,29 @@ export default function Sidebar() {
               return (
                 <li key={doc.id} className="group relative">
                   {confirming ? (
-                    <div className="px-2 py-2 rounded-md bg-red-50 border border-red-200">
-                      <p className="text-xs text-red-700 font-medium mb-1.5 leading-tight">
+                    <div className="px-2 py-2 rounded-md bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800">
+                      <p className="text-xs text-red-700 dark:text-red-400 font-medium mb-1.5 leading-tight">
                         Delete "{doc.title}"?
                       </p>
                       <div className="flex gap-1.5">
                         <button
                           onClick={() => handleDeleteConfirmed(doc.id)}
                           className="flex-1 py-1 text-[11px] font-medium text-white bg-red-600 rounded hover:bg-red-700 transition-colors"
-                        >
-                          Delete
-                        </button>
+                        >Delete</button>
                         <button
                           onClick={() => setConfirmDeleteId(null)}
-                          className="flex-1 py-1 text-[11px] font-medium text-gray-600 bg-gray-100 rounded hover:bg-gray-200 transition-colors"
-                        >
-                          Cancel
-                        </button>
+                          className="flex-1 py-1 text-[11px] font-medium text-gray-600 dark:text-gray-400 bg-gray-100 dark:bg-gray-800 rounded hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
+                        >Cancel</button>
                       </div>
                     </div>
                   ) : (
                     <div className={`flex items-start gap-1 rounded-md transition-colors ${
-                      isActive ? 'bg-blue-50' : 'hover:bg-gray-50'
+                      isActive ? 'bg-blue-50 dark:bg-blue-950/40' : 'hover:bg-gray-50 dark:hover:bg-gray-800'
                     }`}>
                       <button
                         onClick={() => dispatch({ type: 'SET_ACTIVE_DOCUMENT', id: doc.id })}
                         className={`flex-1 text-left px-2 py-2 min-w-0 ${
-                          isActive ? 'text-blue-900' : 'text-gray-700'
+                          isActive ? 'text-blue-900 dark:text-blue-100' : 'text-gray-700 dark:text-gray-300'
                         }`}
                       >
                         <div className="flex items-start gap-2">
@@ -229,7 +247,7 @@ export default function Sidebar() {
                                 )}
                                 {doc.status}
                               </span>
-                              <span className="text-[10px] text-gray-400">{formatRelativeTime(doc.updatedAt)}</span>
+                              <span className="text-[10px] text-gray-400 dark:text-gray-600">{formatRelativeTime(doc.updatedAt)}</span>
                             </div>
                           </div>
                         </div>
@@ -237,7 +255,7 @@ export default function Sidebar() {
                       <button
                         onClick={() => setConfirmDeleteId(doc.id)}
                         title="Delete document"
-                        className="opacity-0 group-hover:opacity-100 mt-2 mr-1.5 p-1 text-gray-300 hover:text-red-500 hover:bg-red-50 rounded transition-all shrink-0"
+                        className="opacity-0 group-hover:opacity-100 mt-2 mr-1.5 p-1 text-gray-300 dark:text-gray-700 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/40 rounded transition-all shrink-0"
                       >
                         <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
                           <path d="M2 3h8M5 3V2h2v1M4.5 3v6.5h3V3" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
@@ -257,10 +275,10 @@ export default function Sidebar() {
             onClick={() => setTemplatesOpen(!templatesOpen)}
             className="flex items-center justify-between w-full mb-1"
           >
-            <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Templates</span>
+            <span className="text-xs font-semibold text-gray-400 dark:text-gray-600 uppercase tracking-wider">Templates</span>
             <svg
               width="12" height="12" viewBox="0 0 12 12" fill="none"
-              className={`text-gray-400 transition-transform ${templatesOpen ? 'rotate-180' : ''}`}
+              className={`text-gray-400 dark:text-gray-600 transition-transform ${templatesOpen ? 'rotate-180' : ''}`}
             >
               <path d="M2 4l4 4 4-4" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" />
             </svg>
@@ -269,18 +287,71 @@ export default function Sidebar() {
           {templatesOpen && (
             <ul className="space-y-0.5">
               {templates.map((tpl) => (
-                <li key={tpl.id}>
-                  <button
-                    onMouseEnter={(e) => handleTemplateEnter(tpl, e)}
-                    onMouseLeave={scheduleClose}
-                    className="w-full text-left px-2 py-1.5 text-xs text-gray-600 hover:bg-gray-50 hover:text-gray-900 rounded-md transition-colors flex items-center gap-2"
-                  >
-                    <svg width="12" height="12" viewBox="0 0 12 12" fill="none" className="text-gray-400 shrink-0">
-                      <rect x="1.5" y="1.5" width="9" height="9" rx="1" stroke="currentColor" strokeWidth="1.2" />
-                      <path d="M3.5 4h5M3.5 6h3.5M3.5 8h2" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
-                    </svg>
-                    {tpl.name}
-                  </button>
+                <li key={tpl.id} className="group/tpl">
+                  {editingTemplateId === tpl.id ? (
+                    <div className="px-2 py-1 flex items-center gap-1">
+                      <input
+                        type="text"
+                        value={editNameDraft}
+                        onChange={(e) => setEditNameDraft(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') handleRenameTemplate(tpl.id)
+                          if (e.key === 'Escape') setEditingTemplateId(null)
+                        }}
+                        onBlur={() => handleRenameTemplate(tpl.id)}
+                        autoFocus
+                        className="flex-1 min-w-0 text-xs text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 border border-blue-400 dark:border-blue-500 rounded px-1.5 py-0.5 outline-none"
+                      />
+                    </div>
+                  ) : confirmDeleteTemplateId === tpl.id ? (
+                    <div className="px-2 py-2 rounded-md bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800">
+                      <p className="text-xs text-red-700 dark:text-red-400 font-medium mb-1.5 leading-tight">Delete "{tpl.name}"?</p>
+                      <div className="flex gap-1.5">
+                        <button
+                          onClick={() => handleDeleteTemplate(tpl.id)}
+                          className="flex-1 py-1 text-[11px] font-medium text-white bg-red-600 rounded hover:bg-red-700 transition-colors"
+                        >Delete</button>
+                        <button
+                          onClick={() => setConfirmDeleteTemplateId(null)}
+                          className="flex-1 py-1 text-[11px] font-medium text-gray-600 dark:text-gray-400 bg-gray-100 dark:bg-gray-800 rounded hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
+                        >Cancel</button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="flex items-center rounded-md hover:bg-gray-50 dark:hover:bg-gray-800">
+                      <button
+                        onMouseEnter={(e) => handleTemplateEnter(tpl, e)}
+                        onMouseLeave={scheduleClose}
+                        className="flex-1 text-left px-2 py-1.5 text-xs text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 transition-colors flex items-center gap-2 min-w-0"
+                      >
+                        <svg width="12" height="12" viewBox="0 0 12 12" fill="none" className="text-gray-400 dark:text-gray-600 shrink-0">
+                          <rect x="1.5" y="1.5" width="9" height="9" rx="1" stroke="currentColor" strokeWidth="1.2" />
+                          <path d="M3.5 4h5M3.5 6h3.5M3.5 8h2" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
+                        </svg>
+                        <span className="truncate">{tpl.name}</span>
+                      </button>
+                      <div className="flex gap-0.5 opacity-0 group-hover/tpl:opacity-100 transition-opacity pr-1 shrink-0">
+                        <button
+                          onClick={() => { setEditingTemplateId(tpl.id); setEditNameDraft(tpl.name) }}
+                          title="Rename template"
+                          className="p-1 text-gray-300 dark:text-gray-700 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition-all"
+                        >
+                          <svg width="11" height="11" viewBox="0 0 11 11" fill="none">
+                            <path d="M7.5 1.5l2 2L3 10H1V8L7.5 1.5z" stroke="currentColor" strokeWidth="1.1" strokeLinecap="round" strokeLinejoin="round" />
+                          </svg>
+                        </button>
+                        <button
+                          onClick={() => setConfirmDeleteTemplateId(tpl.id)}
+                          title="Delete template"
+                          className="p-1 text-gray-300 dark:text-gray-700 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/40 rounded transition-all"
+                        >
+                          <svg width="11" height="11" viewBox="0 0 11 11" fill="none">
+                            <path d="M1.5 2.5h8M4 2.5V1.5h3v1M3.5 2.5v6.5h4V2.5" stroke="currentColor" strokeWidth="1.1" strokeLinecap="round" strokeLinejoin="round" />
+                          </svg>
+                        </button>
+                      </div>
+                    </div>
+                  )}
                 </li>
               ))}
             </ul>
@@ -288,38 +359,36 @@ export default function Sidebar() {
         </div>
       </div>
 
-      {/* Template preview popover — rendered at body level to escape overflow:hidden */}
+      {/* Template preview popover */}
       {hoveredTemplate && createPortal(
         <div
           style={{ top: popoverPos.top, left: popoverPos.left }}
-          className="fixed z-50 w-64 bg-white rounded-xl shadow-xl border border-gray-200 overflow-hidden"
+          className="fixed z-50 w-64 bg-white dark:bg-gray-900 rounded-xl shadow-xl dark:shadow-black/40 border border-gray-200 dark:border-gray-700 overflow-hidden"
           onMouseEnter={cancelClose}
           onMouseLeave={scheduleClose}
         >
-          {/* Header */}
-          <div className="px-3.5 py-2.5 bg-gray-50 border-b border-gray-100 flex items-center gap-2">
-            <svg width="13" height="13" viewBox="0 0 12 12" fill="none" className="text-gray-400 shrink-0">
+          <div className="px-3.5 py-2.5 bg-gray-50 dark:bg-gray-800 border-b border-gray-100 dark:border-gray-700 flex items-center gap-2">
+            <svg width="13" height="13" viewBox="0 0 12 12" fill="none" className="text-gray-400 dark:text-gray-600 shrink-0">
               <rect x="1.5" y="1.5" width="9" height="9" rx="1" stroke="currentColor" strokeWidth="1.2" />
               <path d="M3.5 4h5M3.5 6h3.5M3.5 8h2" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
             </svg>
-            <span className="text-xs font-semibold text-gray-800">{hoveredTemplate.name}</span>
+            <span className="text-xs font-semibold text-gray-800 dark:text-gray-200">{hoveredTemplate.name}</span>
           </div>
 
-          {/* Section preview */}
           <div className="px-3.5 py-2.5 min-h-20">
             {previewLoading ? (
               <div className="space-y-2 animate-pulse">
                 {[80, 65, 72, 55, 68].map((w, i) => (
-                  <div key={i} className="h-2.5 bg-gray-100 rounded" style={{ width: `${w}%` }} />
+                  <div key={i} className="h-2.5 bg-gray-100 dark:bg-gray-800 rounded" style={{ width: `${w}%` }} />
                 ))}
               </div>
             ) : previewSections.length === 0 ? (
-              <p className="text-xs text-gray-400">No sections found</p>
+              <p className="text-xs text-gray-400 dark:text-gray-600">No sections found</p>
             ) : (
               <ul className="space-y-1.5">
                 {previewSections.map((s) => (
-                  <li key={s.id} className="flex items-start gap-1.5 text-xs text-gray-600">
-                    <span className="text-gray-300 shrink-0 mt-px">–</span>
+                  <li key={s.id} className="flex items-start gap-1.5 text-xs text-gray-600 dark:text-gray-400">
+                    <span className="text-gray-300 dark:text-gray-600 shrink-0 mt-px">–</span>
                     <span>{s.heading}</span>
                   </li>
                 ))}
@@ -327,16 +396,13 @@ export default function Sidebar() {
             )}
           </div>
 
-          {/* Actions */}
-          <div className="px-3.5 py-2 border-t border-gray-100 flex items-center justify-between">
-            <span className="text-[10px] text-gray-400">{previewSections.length} sections</span>
+          <div className="px-3.5 py-2 border-t border-gray-100 dark:border-gray-800 flex items-center justify-between">
+            <span className="text-[10px] text-gray-400 dark:text-gray-600">{previewSections.length} sections</span>
             <div className="flex gap-1.5">
               <button
                 onClick={() => setHoveredTemplate(null)}
-                className="px-2.5 py-1 text-xs text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-md transition-colors"
-              >
-                Cancel
-              </button>
+                className="px-2.5 py-1 text-xs text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-md transition-colors"
+              >Cancel</button>
               <button
                 onClick={handleCreateFromPopover}
                 className="px-2.5 py-1 text-xs font-medium text-white bg-indigo-600 hover:bg-indigo-700 rounded-md transition-colors flex items-center gap-1"
@@ -353,14 +419,12 @@ export default function Sidebar() {
       )}
 
       {/* User footer */}
-      <div className="px-3 py-2 border-t border-gray-100 flex items-center justify-between">
+      <div className="px-3 py-2 border-t border-gray-100 dark:border-gray-800 flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <div className="w-7 h-7 rounded-full bg-indigo-500 flex items-center justify-center text-xs font-semibold text-white">
-            K
-          </div>
-          <span className="text-xs font-medium text-gray-700">Khanh</span>
+          <div className="w-7 h-7 rounded-full bg-indigo-500 flex items-center justify-center text-xs font-semibold text-white">K</div>
+          <span className="text-xs font-medium text-gray-700 dark:text-gray-300">Khanh</span>
         </div>
-        <button className="p-1 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-md transition-colors">
+        <button className="p-1 text-gray-400 dark:text-gray-600 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-md transition-colors">
           <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
             <circle cx="7" cy="7" r="2" stroke="currentColor" strokeWidth="1.2" />
             <path d="M7 1v1.5M7 11.5V13M1 7h1.5M11.5 7H13M2.93 2.93l1.06 1.06M10.01 10.01l1.06 1.06M2.93 11.07l1.06-1.06M10.01 3.99l1.06-1.06" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />

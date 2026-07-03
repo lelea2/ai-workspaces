@@ -651,6 +651,23 @@ export function buildTemplateSections(templateId: string): Section[] {
   return def.sections.map((s, i) => ({ ...s, id: `s-${t}-${i}` }))
 }
 
+export function saveTemplate(name: string, sections: { heading: string; body: string }[]): { id: string; name: string } {
+  const id = `tpl-${Date.now()}`
+  templates.set(id, { id, name, sections })
+  return { id, name }
+}
+
+export function updateTemplate(id: string, patch: { name?: string }): boolean {
+  const existing = templates.get(id)
+  if (!existing) return false
+  templates.set(id, { ...existing, ...patch })
+  return true
+}
+
+export function deleteTemplate(id: string): boolean {
+  return templates.delete(id)
+}
+
 // ── Agent accessors ───────────────────────────────────────────────────────────
 
 export function getAgents(): AgentConfig[] {

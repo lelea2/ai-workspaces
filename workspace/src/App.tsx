@@ -24,7 +24,7 @@ function ErrorToast() {
   if (!visible || !message) return null
 
   return (
-    <div className="fixed top-16 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2 bg-red-600 text-white text-sm px-4 py-2.5 rounded-lg shadow-lg">
+    <div className="fixed top-16 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2 bg-red-600 dark:bg-red-700 text-white text-sm px-4 py-2.5 rounded-lg shadow-lg">
       <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
         <path d="M8 5v4M8 11h.01" stroke="white" strokeWidth="1.6" strokeLinecap="round" />
         <path d="M7.134 2.5L1.5 13h13L8.866 2.5a1 1 0 0 0-1.732 0z" stroke="white" strokeWidth="1.4" strokeLinejoin="round" />
@@ -46,7 +46,7 @@ function ErrorToast() {
 function AppShell() {
   return (
     <>
-      <div className="flex flex-col h-screen bg-gray-50 overflow-hidden">
+      <div className="flex flex-col h-screen bg-gray-50 dark:bg-gray-950 overflow-hidden">
         <Header />
         <div className="flex flex-1 overflow-hidden min-w-0">
           <Sidebar />
