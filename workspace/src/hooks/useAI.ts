@@ -13,7 +13,11 @@ export function useAI() {
     if (!activeDocument) return
     dispatch({ type: 'GENERATE_DRAFT_START', docId: activeDocument.id })
     try {
-      const sections = await getAIService().generateDraft(prompt)
+      const sections = await getAIService().generateDraft(prompt, {
+        documentId: activeDocument.id,
+        title: activeDocument.title,
+        sections: activeDocument.sections,
+      })
       dispatch({ type: 'GENERATE_DRAFT_SUCCESS', docId: activeDocument.id, sections })
     } catch (err) {
       const error = err instanceof Error ? err.message : 'Draft generation failed.'

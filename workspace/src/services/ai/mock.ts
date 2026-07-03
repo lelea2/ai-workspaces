@@ -1,5 +1,5 @@
 import type { Comment, Document, Section, Suggestion } from '../../types'
-import type { AIService, ApplySuggestionResult, FixCommentResult, ReviewResult } from './types'
+import type { AIService, ApplySuggestionResult, FixCommentResult, ReviewResult, DraftContext } from './types'
 import { extractPlainText } from '../../utils/lexical'
 
 const AGENT_STYLE: Record<string, { color: string }> = {
@@ -66,8 +66,15 @@ function commentForSection(section: Section): string {
 }
 
 export class MockAIService implements AIService {
-  async generateDraft(prompt: string): Promise<Section[]> {
+  async generateDraft(prompt: string, context?: DraftContext): Promise<Section[]> {
     await sleep(900)
+    if (context?.sections?.length) {
+      return context.sections.map((section) => ({
+        id: section.id,
+        heading: section.heading,
+        body: `Draft content for ${section.heading.replace(/^\s*\d+[.)]?\s*/, '')} based on: ${prompt.trim() || context.title || 'the current document'}.\n\nExpand this section with concrete details, examples, and implementation notes specific to the document context.`,
+      }))
+    }
     const t = Date.now()
     const topic = prompt.replace(/^create\s+a?\s*/i, '').trim() || 'this project'
     return [

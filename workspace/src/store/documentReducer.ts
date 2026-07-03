@@ -1,4 +1,4 @@
-import type { AppState, Document, ActivityEvent, Reply, UserActor } from '../types'
+import type { AppState, Document, ActivityEvent, Reply, UserActor, Section } from '../types'
 import type { Action } from './actions'
 import { lexicalReplaceText, isLexicalJson, plainTextToLexicalJson } from '../utils/lexical'
 

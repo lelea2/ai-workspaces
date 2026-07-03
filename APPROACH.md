@@ -8,7 +8,7 @@ Note: POC available at https://ai-workspaces-production.up.railway.app
 
 ### The Core Loop
 
-1. **Draft:** User picks "Drafting Agent", provides a topic → AI generates 4–6 structured sections
+1. **Draft:** User picks "Drafting Agent", provides a topic → AI fills the current document's section schema (template-aware) and preserves structure
 2. **Review:** User picks a review agent (Security, Clarity, Risk, etc.) → AI adds inline comments + specific text replacement suggestions
 3. **Refine:** User previews AI suggestions side-by-side with current text → accepts improvements or dismisses them
 4. **History:** Every change (user edit, AI suggestion, human decision) is logged in an activity timeline
@@ -84,7 +84,7 @@ A lightweight Node.js backend that proxies AI requests, stores mock data, and sy
 | **POST /api/data/templates** | Save current document structure as new template |
 | **PATCH /api/data/templates/:id** | Rename template |
 | **DELETE /api/data/templates/:id** | Remove template |
-| **POST /api/ai/draft** | Mock or real OpenAI `gpt-4o` (JSON mode, t=0.7) → sections[] |
+| **POST /api/ai/draft** | Mock or real OpenAI `gpt-4o` (JSON mode, t=0.7) with document context + section schema; server coerces output to preserve template structure |
 | **POST /api/ai/review** | Mock or real OpenAI (JSON mode, t=0.4) → { comments[], suggestions[] } |
 | **POST /api/ai/apply-suggestion** | Server str.replace first, then gpt-4o stream (t=0.3) polishes → SSE |
 | **POST /api/ai/fix-comment** | OpenAI identifies span + replacement for a comment → { originalText, suggestedText } |
@@ -128,6 +128,7 @@ A lightweight Node.js backend that proxies AI requests, stores mock data, and sy
 - **Client-side status filter** — Sidebar has filter chips (All / Draft / Reviewing / Approved) with live counts; ANDed with text search; selection toggles or clears
 - **Template CRUD** — "Save template" button in Header opens a modal to name and save the current document as a reusable template. Each template in the Sidebar shows pencil (rename inline) and trash (delete with confirm) actions on hover. Backend routes: POST / PATCH / DELETE `/api/data/templates`.
 - **Template picker on empty doc** — When a new document has no sections, the Editor renders a card grid of all available templates. Picking one dispatches `GENERATE_DRAFT_SUCCESS` (reusing the same reducer path as an AI draft) to populate sections; the AI assistant immediately has structure to work with.
+- **Template-aware drafting fix** — Draft requests now include current `documentId`, title, and section schema. The server prompt enforces "preserve ids/headings/order" when template sections exist, and server-side coercion maps model output back to the existing template structure. This prevents generic sections like "Introduction/Components/Design" from replacing template-defined sections.
 - **Dark mode** — Class-based (`.dark` on `<html>`), toggled via sun/moon icon button in the Header. `UIContext` reads `localStorage('theme')` on first load and falls back to `prefers-color-scheme`. All components — Sidebar, Editor, LexicalEditor, AIPanel, Timeline, Header — have full `dark:` Tailwind variants. Tailwind v4 requires `@variant dark (&:where(.dark, .dark *))` in `index.css` to enable class-based toggling instead of the default media-query behavior.
 - **User identity & login** — Seed user roster (Khanh, Alice, Marcus, Sarah, James) stored in `server/db.ts`. On first load a full-screen user-picker lets you choose who you are; identity is persisted to `localStorage`. No passwords — mock identity for POC.
 - **Document ownership** — Every document carries `ownerId` and `sharedWith[]`. Documents created by a user are automatically owned by them. Sidebar filters strictly to docs the current user owns or has been shared on — no fallback.
@@ -137,6 +138,7 @@ A lightweight Node.js backend that proxies AI requests, stores mock data, and sy
 - **Editor locked during AI review** — While `isReviewing` is true (AI is generating suggestions), all `LexicalEditor` instances switch to `readonly` mode (toolbar hidden, `contentEditable={false}`, muted text style). A violet banner reads "AI is reviewing — editing paused until suggestions are ready."
 - **Debounce race fix** — External body changes (accepted suggestions, "Fix by Agent" apply) now cancel any pending 600 ms save timer before remounting the editor, preventing stale user content from overwriting the AI-applied body.
 - **Template picker stuck fix** — `handlePickTemplate` now uses `finally` to clear `applying`, so template buttons are never permanently disabled after a successful apply.
+- **Non-destructive draft merge fix** — `GENERATE_DRAFT_SUCCESS` now merges generated sections with existing sections instead of replacing blindly. User-edited sections are preserved; untouched sections are refreshed; unmatched generated sections are appended.
 - **Activity timeline** — Append-only event log of all document mutations
 - **Seed data** — 6 pre-populated documents with realistic templates and ownership assigned across the 5 seed users
 - **Responsive design** — Collapsible sidebar and AI panel; works on desktop
@@ -435,6 +437,7 @@ All support Node.js servers natively. Upload this repo and set `OPENAI_API_KEY` 
 
 ### What's Tested (Informally)
 - Mock AI draft + review flow (Phase 1)
+- Template-aware draft generation on template-backed documents
 - Accept/reject suggestions
 - Human comments + resolve
 - localStorage persistence
@@ -462,26 +465,22 @@ All support Node.js servers natively. Upload this repo and set `OPENAI_API_KEY` 
 
 ## Known Issues
 
-1. **Draft generation overwrites sections destructively** ([documentReducer.ts:101](workspace/src/store/documentReducer.ts#L101))
-   - If user edits a section, then generates a draft, user edits are lost
-   - Fix: Merge new sections with existing, or add a "replace all" confirmation (~2 hrs)
-
-2. **Status recalculation incomplete** ([documentReducer.ts:28-34](workspace/src/store/documentReducer.ts#L28-L34))
+1. **Status recalculation incomplete** ([documentReducer.ts](workspace/src/store/documentReducer.ts))
    - Only handles reviewing → approved transition
    - Missing cases: new suggestions added to reviewing doc, rejecting all suggestions
    - Fix: Expand logic to cover all state transitions (~1 hr)
 
-3. **Streaming content not cleared on error** ([AIPanel.tsx](workspace/src/components/AIPanel/AIPanel.tsx))
+2. **Streaming content not cleared on error** ([AIPanel.tsx](workspace/src/components/AIPanel/AIPanel.tsx))
    - If AI call fails midway, stale content remains in streamingContents / commentStreamingContents map
    - Next retry shows old preview
    - Fix: Clear map in error handler (~30 mins)
 
-4. **Template data resets on server restart**
+3. **Template data resets on server restart**
    - User-created templates (via "Save template") live in the same in-memory Map as seed templates
    - They vanish on restart along with all other server-side state
    - Fix: Add persistence (SQLite/Postgres) to `server/db.ts` — no route changes needed (~6 hrs)
 
-5. **localStorage quota silently exceeded**
+4. **localStorage quota silently exceeded**
    - After ~100+ documents, new edits fail silently
    - User loses work without warning
    - Fix: Check quota before write, show error toast (~1 hr)

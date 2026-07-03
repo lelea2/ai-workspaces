@@ -1,12 +1,12 @@
 import type { Comment, Document, Section, Suggestion } from '../../types'
-import type { AIService, ReviewResult, ApplySuggestionResult, FixCommentResult } from './types'
+import type { AIService, ReviewResult, ApplySuggestionResult, FixCommentResult, DraftContext } from './types'
 
 export class ProxyAIService implements AIService {
-  async generateDraft(prompt: string): Promise<Section[]> {
+  async generateDraft(prompt: string, context?: DraftContext): Promise<Section[]> {
     const res = await fetch('/api/ai/draft', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ prompt }),
+      body: JSON.stringify({ prompt, context }),
     })
     if (!res.ok) {
       const body = await res.json().catch(() => ({ error: res.statusText })) as { error?: string }

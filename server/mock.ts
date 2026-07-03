@@ -137,6 +137,19 @@ export function mockDraft(prompt: string): Section[] {
   ]
 }
 
+export function mockDraftFromTemplate(
+  prompt: string,
+  templateSections: Section[],
+  title?: string,
+): Section[] {
+  const basis = prompt.trim() || title?.trim() || 'this document'
+  return templateSections.map((section) => ({
+    id: section.id,
+    heading: section.heading,
+    body: `Draft for ${section.heading.replace(/^\s*\d+[.)]?\s*/, '')} based on: ${basis}.\n\nProvide concrete details, decisions, and examples tailored to this section while keeping scope aligned with the document intent.`,
+  }))
+}
+
 export function mockReview(
   doc: { title: string; sections: Section[] },
   agentName: string,

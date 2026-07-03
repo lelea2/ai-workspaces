@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { openai } from '../openai.js';
 import { getDraftSystemPrompt, getReviewSystemPrompt, getApplySuggestionSystemPrompt, getFixCommentSystemPrompt } from '../prompts.js';
-import { mockDraft, mockReview, mockApplySuggestion, mockFixComment } from '../mock.js';
+import { mockDraft, mockDraftFromTemplate, mockReview, mockApplySuggestion, mockFixComment } from '../mock.js';
 import { extractPlainText } from '../lexical.js';
 const USE_MOCK = process.env.MOCK_AI === 'true';
 // Map agent names to the avatar styles used in the frontend
@@ -17,6 +17,36 @@ function agentStyle(name) {
 }
 function stripFences(raw) {
     return raw.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/i, '').trim();
+}
+function normalizeHeading(heading) {
+    return heading
+        .toLowerCase()
+        .replace(/^\s*\d+[.)]?\s*/, '')
+        .replace(/\s+/g, ' ')
+        .trim();
+}
+function coerceDraftToTemplate(templateSections, draftedSections) {
+    const byId = new Map(draftedSections.map((s) => [s.id, s]));
+    const byHeading = new Map();
+    for (const section of draftedSections) {
+        const key = normalizeHeading(section.heading);
+        const bucket = byHeading.get(key);
+        if (bucket)
+            bucket.push(section);
+        else
+            byHeading.set(key, [section]);
+    }
+    return templateSections.map((template, index) => {
+        const byTemplateId = byId.get(template.id);
+        const byTemplateHeading = byHeading.get(normalizeHeading(template.heading))?.shift();
+        const byOrder = draftedSections[index];
+        const match = byTemplateId ?? byTemplateHeading ?? byOrder;
+        return {
+            id: template.id,
+            heading: template.heading,
+            body: match?.body?.trim() ? match.body : template.body,
+        };
+    });
 }
 export const aiRouter = Router();
 aiRouter.post('/apply-suggestion', async (req, res) => {
@@ -200,21 +230,45 @@ aiRouter.post('/fix-comment', async (req, res) => {
         res.status(500).json({ error: message });
     }
 });
-// ── POST /api/ai/draft ────────────────────────────────────────────────────────
 aiRouter.post('/draft', async (req, res) => {
-    const { prompt } = req.body;
+    const { prompt, context } = req.body;
     if (!prompt?.trim()) {
         res.status(400).json({ error: 'prompt is required' });
         return;
     }
+    const templateSections = Array.isArray(context?.sections)
+        ? context.sections.filter((s) => s?.id && s?.heading)
+        : [];
+    const hasTemplateSections = templateSections.length > 0;
     const provider = USE_MOCK ? 'mock' : 'openai';
-    console.log(`[ai] provider=${provider}  op=draft`);
+    console.log(`[ai] provider=${provider}  op=draft  doc=${context?.documentId ?? 'n/a'}  templateSections=${templateSections.length}`);
     if (USE_MOCK) {
-        const sections = mockDraft(prompt);
+        const sections = hasTemplateSections
+            ? mockDraftFromTemplate(prompt, templateSections, context?.title)
+            : mockDraft(prompt);
         console.log(`[ai] draft  sections=${sections.length}  status=200`);
         res.json(sections);
         return;
     }
+    const userContent = hasTemplateSections
+        ? [
+            `Document id: ${context?.documentId ?? 'unknown'}`,
+            `Document title: ${context?.title ?? 'Untitled Document'}`,
+            `Draft request: ${prompt}`,
+            '',
+            'TEMPLATE SECTIONS / SECTION SCHEMA (preserve exactly):',
+            ...templateSections.map((s, i) => {
+                const plain = extractPlainText(s.body ?? '');
+                return [
+                    `${i + 1}. id="${s.id}" heading="${s.heading}"`,
+                    plain ? `Current section body (context): ${plain}` : 'Current section body (context): (empty)',
+                ].join('\n');
+            }),
+            '',
+            'Fill these sections using the draft request and document context.',
+            'Return only JSON.',
+        ].join('\n\n')
+        : prompt;
     try {
         const completion = await openai.chat.completions.create({
             model: 'gpt-4o',
@@ -225,16 +279,19 @@ aiRouter.post('/draft', async (req, res) => {
                     role: 'system',
                     content: getDraftSystemPrompt(),
                 },
-                { role: 'user', content: prompt },
+                { role: 'user', content: userContent },
             ],
         });
         const raw = completion.choices[0].message.content?.trim() ?? '{}';
         const parsed = JSON.parse(stripFences(raw));
-        const sections = (parsed.sections ?? []).map((s, i) => ({
+        const draftedSections = (parsed.sections ?? []).map((s, i) => ({
             id: s.id || `section-${i + 1}`,
             heading: s.heading,
             body: s.body,
         }));
+        const sections = hasTemplateSections
+            ? coerceDraftToTemplate(templateSections, draftedSections)
+            : draftedSections;
         console.log(`[ai] draft  sections=${sections.length}  status=200`);
         res.json(sections);
     }
@@ -283,7 +340,10 @@ aiRouter.post('/review', async (req, res) => {
         const now = new Date().toISOString();
         const t = Date.now();
         const style = agentStyle(agentName);
-        const comments = (parsed.comments ?? []).map((c, i) => ({
+        const sectionMap = Object.fromEntries(doc.sections.map((s) => [s.id, s]));
+        const comments = (parsed.comments ?? [])
+            .filter((c) => !!sectionMap[c.sectionId])
+            .map((c, i) => ({
             id: `comment-${t}-${i}`,
             sectionId: c.sectionId,
             author: 'ai',
@@ -295,7 +355,6 @@ aiRouter.post('/review', async (req, res) => {
             createdAt: now,
             replies: [],
         }));
-        const sectionMap = Object.fromEntries(doc.sections.map((s) => [s.id, s]));
         const suggestions = (parsed.suggestions ?? [])
             .filter((s) => {
             // Validate originalText against plain text (body may be Lexical JSON)

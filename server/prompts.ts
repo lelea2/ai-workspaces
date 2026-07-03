@@ -62,7 +62,13 @@ Requirements:
 - Heading format: numbered title, e.g. "1. Problem Statement".
 - id: short hyphenated slug of the heading, e.g. "problem-statement".
 - Body: 80–120 words, specific and professional — no generic filler.
-- Include 4–6 sections appropriate for the document type requested.`
+- Include 4–6 sections appropriate for the document type requested.
+
+If the user provides TEMPLATE SECTIONS / SECTION SCHEMA:
+- Preserve that structure exactly.
+- Return the same section ids and headings in the same order.
+- Fill or improve each section body based on the user prompt and document context.
+- Do NOT invent new sections, rename headings, or reorder sections.`
 }
 
 export function getApplySuggestionSystemPrompt(): string {
