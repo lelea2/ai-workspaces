@@ -6,6 +6,7 @@ import { useUser } from '../../store/UserContext'
 import { formatRelativeTime } from '../../utils/time'
 import { dataService } from '../../services/data/dataService'
 import { exportAsMarkdown, exportAsPDF } from '../../utils/export'
+import { extractPlainText } from '../../utils/lexical'
 import type { DocumentStatus, Section, User } from '../../types'
 
 const STATUS_STYLE: Record<DocumentStatus, string> = {
@@ -127,41 +128,56 @@ function ShareModal({
   )
 }
 
+type DraftSection = { key: string; heading: string; body: string }
+
 function SaveTemplateModal({
   defaultName,
+  initialSections,
   onSave,
   onClose,
 }: {
   defaultName: string
-  onSave: (name: string) => Promise<void>
+  initialSections: { heading: string; body: string }[]
+  onSave: (name: string, sections: { heading: string; body: string }[]) => Promise<void>
   onClose: () => void
 }) {
   const [name, setName] = useState(defaultName)
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
-  const containerRef = useRef<HTMLDivElement>(null)
+  const [sections, setSections] = useState<DraftSection[]>(() =>
+    initialSections.length > 0
+      ? initialSections.map((s, i) => ({ key: String(i), heading: s.heading, body: s.body }))
+      : [{ key: '0', heading: 'Section 1', body: '' }]
+  )
   const inputRef = useRef<HTMLInputElement>(null)
 
-  useEffect(() => { inputRef.current?.select() }, [])
-
   useEffect(() => {
-    function handleClick(e: MouseEvent) {
-      if (containerRef.current && !containerRef.current.contains(e.target as Node)) onClose()
-    }
+    inputRef.current?.select()
     function handleKey(e: KeyboardEvent) { if (e.key === 'Escape') onClose() }
-    document.addEventListener('mousedown', handleClick)
     document.addEventListener('keydown', handleKey)
-    return () => {
-      document.removeEventListener('mousedown', handleClick)
-      document.removeEventListener('keydown', handleKey)
-    }
+    return () => document.removeEventListener('keydown', handleKey)
   }, [onClose])
 
+  function addSection() {
+    setSections((prev) => [
+      ...prev,
+      { key: String(Date.now()), heading: `Section ${prev.length + 1}`, body: '' },
+    ])
+  }
+
+  function removeSection(key: string) {
+    setSections((prev) => prev.filter((s) => s.key !== key))
+  }
+
+  function updateSection(key: string, field: 'heading' | 'body', value: string) {
+    setSections((prev) => prev.map((s) => s.key === key ? { ...s, [field]: value } : s))
+  }
+
   async function handleSave() {
-    if (!name.trim() || saving) return
+    if (!name.trim() || saving || sections.length === 0) return
     setSaving(true)
     try {
-      await onSave(name.trim())
+      await onSave(name.trim(), sections.map(({ heading, body }) => ({ heading, body })))
       setSaved(true)
       setTimeout(onClose, 1200)
     } catch {
@@ -170,32 +186,107 @@ function SaveTemplateModal({
   }
 
   return (
-    <div ref={containerRef} className="absolute top-full right-0 mt-2 w-72 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl shadow-lg dark:shadow-black/30 p-4 z-50">
-      <div className="flex items-center justify-between mb-3">
-        <p className="text-sm font-semibold text-gray-900 dark:text-gray-50">Save as template</p>
-        <button onClick={onClose} className="p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
-          <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M3 3l8 8M11 3L3 11" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" /></svg>
-        </button>
+    <div className="fixed inset-0 z-50 flex items-start justify-center pt-14 px-4">
+      <div className="absolute inset-0 bg-black/40 dark:bg-black/60 backdrop-blur-sm" onClick={onClose} />
+      <div className="relative w-full max-w-2xl bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl shadow-2xl dark:shadow-black/50 flex flex-col max-h-[82vh]">
+        {/* Header */}
+        <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 dark:border-gray-800 shrink-0">
+          <div>
+            <p className="text-sm font-semibold text-gray-900 dark:text-gray-50">Save as template</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Customize sections before saving as a reusable template</p>
+          </div>
+          <button onClick={onClose} className="p-1.5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M3 3l8 8M11 3L3 11" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" /></svg>
+          </button>
+        </div>
+
+        {/* Scrollable body */}
+        <div className="flex-1 overflow-y-auto px-5 py-4 space-y-4">
+          {/* Template name */}
+          <div>
+            <label className="block text-[10px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wide mb-1.5">Template name</label>
+            <input
+              ref={inputRef}
+              type="text"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              onKeyDown={(e) => { if (e.key === 'Enter') handleSave() }}
+              placeholder="Template name"
+              className="w-full text-sm text-gray-700 dark:text-gray-200 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent placeholder-gray-400 dark:placeholder-gray-600"
+            />
+          </div>
+
+          {/* Sections */}
+          <div>
+            <div className="flex items-center justify-between mb-2">
+              <label className="text-[10px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wide">
+                Sections <span className="text-gray-300 dark:text-gray-600">({sections.length})</span>
+              </label>
+            </div>
+            <div className="space-y-2.5">
+              {sections.map((section, idx) => (
+                <div key={section.key} className="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
+                  <div className="flex items-center gap-2 px-3 py-2 bg-gray-50 dark:bg-gray-800/60 border-b border-gray-200 dark:border-gray-700">
+                    <span className="w-5 h-5 rounded-full bg-indigo-100 dark:bg-indigo-900/50 text-indigo-600 dark:text-indigo-400 text-[10px] font-bold flex items-center justify-center shrink-0">
+                      {idx + 1}
+                    </span>
+                    <input
+                      type="text"
+                      value={section.heading}
+                      onChange={(e) => updateSection(section.key, 'heading', e.target.value)}
+                      placeholder="Section heading"
+                      className="flex-1 text-sm font-medium text-gray-700 dark:text-gray-200 bg-transparent outline-none placeholder-gray-400 dark:placeholder-gray-600"
+                    />
+                    {sections.length > 1 && (
+                      <button
+                        onClick={() => removeSection(section.key)}
+                        title="Remove section"
+                        className="p-1 text-gray-300 dark:text-gray-600 hover:text-red-500 dark:hover:text-red-400 rounded hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors shrink-0"
+                      >
+                        <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 2l8 8M10 2L2 10" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" /></svg>
+                      </button>
+                    )}
+                  </div>
+                  <textarea
+                    value={section.body}
+                    onChange={(e) => updateSection(section.key, 'body', e.target.value)}
+                    placeholder="Section content (optional placeholder text for this template)"
+                    rows={3}
+                    className="w-full text-sm text-gray-600 dark:text-gray-400 bg-white dark:bg-gray-900 px-3 py-2.5 outline-none resize-none placeholder-gray-300 dark:placeholder-gray-700 leading-relaxed"
+                  />
+                </div>
+              ))}
+            </div>
+
+            <button
+              onClick={addSection}
+              className="mt-3 w-full flex items-center justify-center gap-1.5 px-3 py-2 text-sm text-indigo-600 dark:text-indigo-400 border border-dashed border-indigo-200 dark:border-indigo-800 rounded-lg hover:bg-indigo-50 dark:hover:bg-indigo-950/30 hover:border-indigo-300 dark:hover:border-indigo-700 transition-colors"
+            >
+              <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M6 1v10M1 6h10" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" /></svg>
+              Add section
+            </button>
+          </div>
+        </div>
+
+        {/* Footer */}
+        <div className="flex items-center justify-end gap-2.5 px-5 py-4 border-t border-gray-100 dark:border-gray-800 shrink-0">
+          <button
+            onClick={onClose}
+            className="px-4 py-2 text-sm text-gray-600 dark:text-gray-400 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={handleSave}
+            disabled={!name.trim() || saving || sections.length === 0}
+            className={`px-4 py-2 text-sm font-medium rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed ${
+              saved ? 'bg-green-100 dark:bg-green-900/50 text-green-700 dark:text-green-400' : 'bg-indigo-600 text-white hover:bg-indigo-700'
+            }`}
+          >
+            {saved ? 'Saved!' : saving ? 'Saving…' : 'Save template'}
+          </button>
+        </div>
       </div>
-      <p className="text-xs text-gray-500 dark:text-gray-400 mb-3">Save the current document structure as a reusable template.</p>
-      <input
-        ref={inputRef}
-        type="text"
-        value={name}
-        onChange={(e) => setName(e.target.value)}
-        onKeyDown={(e) => { if (e.key === 'Enter') handleSave(); if (e.key === 'Escape') onClose() }}
-        placeholder="Template name"
-        className="w-full text-sm text-gray-700 dark:text-gray-200 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent mb-3 placeholder-gray-400 dark:placeholder-gray-600"
-      />
-      <button
-        onClick={handleSave}
-        disabled={!name.trim() || saving}
-        className={`w-full flex items-center justify-center gap-1.5 px-3 py-2 text-sm font-medium rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed ${
-          saved ? 'bg-green-100 dark:bg-green-900/50 text-green-700 dark:text-green-400' : 'bg-indigo-600 text-white hover:bg-indigo-700'
-        }`}
-      >
-        {saved ? 'Saved!' : saving ? 'Saving…' : 'Save template'}
-      </button>
     </div>
   )
 }
@@ -376,9 +467,8 @@ export default function Header() {
     runReview('Reviewer Agent')
   }
 
-  async function handleSaveTemplate(name: string) {
-    if (!activeDocument) return
-    await dataService.saveTemplate(name, activeDocument.sections as Section[])
+  async function handleSaveTemplate(name: string, sections: { heading: string; body: string }[]) {
+    await dataService.saveTemplate(name, sections.map((s, i) => ({ id: `section-${i + 1}`, ...s })))
     window.dispatchEvent(new CustomEvent('templates-changed'))
   }
 
@@ -502,6 +592,10 @@ export default function Header() {
           {saveTemplateOpen && activeDocument && (
             <SaveTemplateModal
               defaultName={activeDocument.title}
+              initialSections={(activeDocument.sections as Section[]).map((s) => ({
+                heading: s.heading,
+                body: extractPlainText(s.body),
+              }))}
               onSave={handleSaveTemplate}
               onClose={closeSaveTemplate}
             />
