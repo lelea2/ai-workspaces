@@ -126,7 +126,7 @@ A lightweight Node.js backend that proxies AI requests, stores mock data, and sy
 - **Human commenting & replies** — Users can add inline comments to any section; expand to reply thread; each comment can be replied to by humans or resolved; reply count shown on collapsed card
 - **Fix by Agent** — Every comment card (right rail) and every inline editor bubble has a "Fix by Agent" action. Agent identifies the specific text span the comment refers to (`/api/ai/fix-comment`), then streams a polished body via the apply-suggestion SSE flow. User sees a streaming preview → diff view → must explicitly approve or abort before the document changes. Clicking "Fix by Agent" from an inline bubble also opens the right panel and auto-scrolls to the comment.
 - **Client-side status filter** — Sidebar has filter chips (All / Draft / Reviewing / Approved) with live counts; ANDed with text search; selection toggles or clears
-- **Template CRUD** — "Save template" button in Header opens a modal to name and save the current document as a reusable template. Each template in the Sidebar shows pencil (rename inline) and trash (delete with confirm) actions on hover. Backend routes: POST / PATCH / DELETE `/api/data/templates`.
+- **Template CRUD** — "Save template" button in Header opens a full-screen modal for creating and editing templates before saving. The modal pre-populates sections from the active document (headings + plain-text extracted bodies), and lets users add sections, remove sections (with a single section minimum guard), and edit each section's heading and body content inline before naming and saving the template. Each template in the Sidebar shows pencil (rename inline) and trash (delete with confirm) actions on hover. Backend routes: POST / PATCH / DELETE `/api/data/templates`.
 - **Template picker on empty doc** — When a new document has no sections, the Editor renders a card grid of all available templates. Picking one dispatches `GENERATE_DRAFT_SUCCESS` (reusing the same reducer path as an AI draft) to populate sections; the AI assistant immediately has structure to work with.
 - **Template-aware drafting fix** — Draft requests now include current `documentId`, title, and section schema. The server prompt enforces "preserve ids/headings/order" when template sections exist, and server-side coercion maps model output back to the existing template structure. This prevents generic sections like "Introduction/Components/Design" from replacing template-defined sections.
 - **Dark mode** — Class-based (`.dark` on `<html>`), toggled via sun/moon icon button in the Header. `UIContext` reads `localStorage('theme')` on first load and falls back to `prefers-color-scheme`. All components — Sidebar, Editor, LexicalEditor, AIPanel, Timeline, Header — have full `dark:` Tailwind variants. Tailwind v4 requires `@variant dark (&:where(.dark, .dark *))` in `index.css` to enable class-based toggling instead of the default media-query behavior.
@@ -389,7 +389,7 @@ Based on `BUILD_PLAN.md` Phase 2–4 and feedback from reviewers:
    - "Make this section shorter" → agent rewrites with smaller body
    - Requires storing conversation thread ID in db
 
-4. ~~**Document templates UI**~~ ✅ **Done** — "Save template" button in Header, inline rename/delete per template in Sidebar; full CRUD backend (POST / PATCH / DELETE `/api/data/templates`). Sidebar auto-refreshes via a `templates-changed` window event fired by the Header after a save.
+4. ~~**Document templates UI**~~ ✅ **Done** — "Save template" opens a full-screen editor modal. Users add/remove/edit sections (heading + body textarea each) before saving, with the current document's sections pre-populated as the starting point. Full CRUD backend (POST / PATCH / DELETE `/api/data/templates`). Sidebar auto-refreshes via a `templates-changed` window event.
 
 5. ~~**Dark mode**~~ ✅ **Done** — Tailwind v4 class-based dark mode across all components. `UIContext` manages the `dark` class on `<html>`, persists preference to `localStorage`, and falls back to `prefers-color-scheme` on first load.
 
@@ -456,17 +456,12 @@ All support Node.js servers natively. Upload this repo and set `OPENAI_API_KEY` 
    - Missing cases: new suggestions added to reviewing doc, rejecting all suggestions
    - Fix: Expand logic to cover all state transitions (~1 hr)
 
-2. **Streaming content not cleared on error** ([AIPanel.tsx](workspace/src/components/AIPanel/AIPanel.tsx))
-   - If AI call fails midway, stale content remains in streamingContents / commentStreamingContents map
-   - Next retry shows old preview
-   - Fix: Clear map in error handler (~30 mins)
-
-3. **Template data resets on server restart**
+2. **Template data resets on server restart**
    - User-created templates (via "Save template") live in the same in-memory Map as seed templates
    - They vanish on restart along with all other server-side state
    - Fix: Add persistence (SQLite/Postgres) to `server/db.ts` — no route changes needed (~6 hrs)
 
-4. **localStorage quota silently exceeded**
+3. **localStorage quota silently exceeded**
    - After ~100+ documents, new edits fail silently
    - User loses work without warning
    - Fix: Check quota before write, show error toast (~1 hr)
