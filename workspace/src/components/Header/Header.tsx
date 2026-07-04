@@ -15,6 +15,148 @@ const STATUS_STYLE: Record<DocumentStatus, string> = {
   approved: 'bg-green-50 text-green-700 border-green-200 dark:bg-green-950/50 dark:text-green-400 dark:border-green-800',
 }
 
+const STATUS_LABELS: Record<DocumentStatus, string> = {
+  draft: 'Draft',
+  reviewing: 'Reviewing',
+  approved: 'Approved',
+}
+
+const STATUS_DOT: Record<DocumentStatus, string> = {
+  draft: 'bg-amber-400 dark:bg-amber-500',
+  reviewing: 'bg-blue-400 dark:bg-blue-500',
+  approved: 'bg-green-400 dark:bg-green-500',
+}
+
+function StatusDropdown({
+  status,
+  isReviewing,
+  isGenerating,
+  onChangeStatus,
+}: {
+  status: DocumentStatus
+  isReviewing: boolean
+  isGenerating: boolean
+  onChangeStatus: (s: DocumentStatus) => void
+}) {
+  const [open, setOpen] = useState(false)
+  const [pending, setPending] = useState<DocumentStatus | null>(null)
+  const ref = useRef<HTMLDivElement>(null)
+  const disabled = isReviewing || isGenerating
+
+  useEffect(() => {
+    if (!open) return
+    function handleClick(e: MouseEvent) {
+      if (ref.current && !ref.current.contains(e.target as Node)) {
+        setOpen(false)
+        setPending(null)
+      }
+    }
+    function handleKey(e: KeyboardEvent) {
+      if (e.key === 'Escape') { setOpen(false); setPending(null) }
+    }
+    document.addEventListener('mousedown', handleClick)
+    document.addEventListener('keydown', handleKey)
+    return () => {
+      document.removeEventListener('mousedown', handleClick)
+      document.removeEventListener('keydown', handleKey)
+    }
+  }, [open])
+
+  function handleSelect(s: DocumentStatus) {
+    if (s === status) return
+    setPending(s)
+  }
+
+  function handleConfirm() {
+    if (!pending) return
+    onChangeStatus(pending)
+    setOpen(false)
+    setPending(null)
+  }
+
+  const allStatuses: DocumentStatus[] = ['draft', 'reviewing', 'approved']
+
+  return (
+    <div ref={ref} className="relative shrink-0">
+      <button
+        onClick={() => { if (!disabled) { setOpen((o) => !o); setPending(null) } }}
+        disabled={disabled}
+        title={disabled ? undefined : 'Change document status'}
+        className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border transition-all ${STATUS_STYLE[status]} ${isReviewing ? 'animate-pulse' : ''} ${!disabled ? 'cursor-pointer hover:opacity-75' : ''}`}
+      >
+        {isGenerating ? 'Generating…' : isReviewing ? 'Reviewing…' : STATUS_LABELS[status]}
+        {!disabled && (
+          <svg width="8" height="8" viewBox="0 0 8 8" fill="none" className="opacity-50 shrink-0">
+            <path d="M1.5 3L4 5.5 6.5 3" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+        )}
+      </button>
+
+      {open && (
+        <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 w-52 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl shadow-lg dark:shadow-black/30 z-50 overflow-hidden">
+          {pending ? (
+            <div className="px-3.5 py-3">
+              <p className="text-[10px] font-semibold text-gray-400 dark:text-gray-600 uppercase tracking-wide mb-1.5">Confirm status change</p>
+              <div className="flex items-center gap-2 mb-3">
+                <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-medium border ${STATUS_STYLE[status]}`}>
+                  <span className={`w-1.5 h-1.5 rounded-full ${STATUS_DOT[status]}`} />
+                  {STATUS_LABELS[status]}
+                </span>
+                <svg width="12" height="12" viewBox="0 0 12 12" fill="none" className="text-gray-400 shrink-0">
+                  <path d="M2 6h8M7 3l3 3-3 3" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+                <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-medium border ${STATUS_STYLE[pending]}`}>
+                  <span className={`w-1.5 h-1.5 rounded-full ${STATUS_DOT[pending]}`} />
+                  {STATUS_LABELS[pending]}
+                </span>
+              </div>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setPending(null)}
+                  className="flex-1 px-2.5 py-1.5 text-xs text-gray-600 dark:text-gray-400 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleConfirm}
+                  className="flex-1 px-2.5 py-1.5 text-xs font-medium text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg transition-colors"
+                >
+                  Confirm
+                </button>
+              </div>
+            </div>
+          ) : (
+            <>
+              <p className="px-3 pt-2.5 pb-1 text-[10px] font-semibold text-gray-400 dark:text-gray-600 uppercase tracking-wide">Change status</p>
+              {allStatuses.map((s) => (
+                <button
+                  key={s}
+                  onClick={() => handleSelect(s)}
+                  disabled={s === status}
+                  className={`w-full flex items-center gap-2.5 px-3 py-2 text-sm transition-colors ${
+                    s === status
+                      ? 'text-gray-400 dark:text-gray-600 cursor-default'
+                      : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800'
+                  }`}
+                >
+                  <span className={`w-2 h-2 rounded-full shrink-0 ${STATUS_DOT[s]}`} />
+                  {STATUS_LABELS[s]}
+                  {s === status && (
+                    <svg width="12" height="12" viewBox="0 0 12 12" fill="none" className="ml-auto opacity-40">
+                      <path d="M2 6l3 3 5-5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" />
+                    </svg>
+                  )}
+                </button>
+              ))}
+              <div className="h-1" />
+            </>
+          )}
+        </div>
+      )}
+    </div>
+  )
+}
+
 function Avatar({ user, size = 7, ring = true }: { user: User; size?: number; ring?: boolean }) {
   const sizeClass = size === 7 ? 'w-7 h-7 text-xs' : size === 8 ? 'w-8 h-8 text-sm' : 'w-6 h-6 text-[10px]'
   return (
@@ -547,11 +689,17 @@ export default function Header() {
           )}
         </div>
         {activeDocument && (
-          <span
-            className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border shrink-0 transition-colors ${STATUS_STYLE[status]} ${isReviewing ? 'animate-pulse' : ''}`}
-          >
-            {isGenerating ? 'Generating…' : status.charAt(0).toUpperCase() + status.slice(1)}
-          </span>
+          <StatusDropdown
+            status={status}
+            isReviewing={isReviewing}
+            isGenerating={isGenerating}
+            onChangeStatus={(newStatus) => dispatch({
+              type: 'SET_DOCUMENT_STATUS',
+              docId: activeDocument.id,
+              status: newStatus,
+              actor: currentUser ?? undefined,
+            })}
+          />
         )}
       </div>
 

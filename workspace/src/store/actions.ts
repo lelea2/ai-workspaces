@@ -1,4 +1,4 @@
-import type { Section, Comment, Suggestion, Document, UserActor } from '../types'
+import type { Section, Comment, Suggestion, Document, UserActor, DocumentStatus } from '../types'
 
 export type Action =
   | { type: 'SET_ACTIVE_DOCUMENT'; id: string }
@@ -17,6 +17,7 @@ export type Action =
   | { type: 'REPLY_TO_COMMENT'; docId: string; commentId: string; text: string; actor?: UserActor }
   | { type: 'AI_ERROR'; docId: string; error: string }
   | { type: 'PUBLISH_DOCUMENT'; docId: string; actor?: UserActor }
+  | { type: 'SET_DOCUMENT_STATUS'; docId: string; status: DocumentStatus; actor?: UserActor }
   | { type: 'DELETE_DOCUMENT'; docId: string }
   | { type: 'SHARE_DOCUMENT'; docId: string; userId: string }
   | { type: 'UNSHARE_DOCUMENT'; docId: string; userId: string }

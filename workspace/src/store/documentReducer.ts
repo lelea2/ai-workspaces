@@ -365,6 +365,22 @@ export function documentReducer(state: AppState, action: Action): AppState {
         ],
       }))
 
+    case 'SET_DOCUMENT_STATUS': {
+      const label =
+        action.status === 'reviewing' ? 'Reopened for review'
+        : action.status === 'approved' ? 'Marked as approved'
+        : 'Reverted to draft'
+      return updateDoc(state, action.docId, (doc) => ({
+        ...doc,
+        status: action.status,
+        updatedAt: new Date().toISOString(),
+        events: [
+          humanEvent(action.actor, label, 'published'),
+          ...doc.events,
+        ],
+      }))
+    }
+
     case 'SHARE_DOCUMENT':
       return updateDoc(state, action.docId, (doc) => ({
         ...doc,
